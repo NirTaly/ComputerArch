@@ -2,13 +2,15 @@
 /* This file should hold your implementation of the predictor simulator */
 
 #include <stdexcept>
+#include <bitset>
+#include <vector>
+
 #include "bp_api.h"
 
-/*********************************************************************************************/
-/*									Classes													 */
-/*********************************************************************************************/
+using std::bitset;
 
-enum using_share_enum {no_share,lsb_share,mid_share};
+
+typedef enum {SNT,WNT,WT,ST} fsm_state;
 
 static unsigned log2(unsigned n)
 {
@@ -16,6 +18,21 @@ static unsigned log2(unsigned n)
 	for (; n != 0; count++, n>>=1) { }
 	return count;
 }
+
+class FSM
+{
+private:
+	fsm_state state;
+public:
+	FSM(fsm_state def_state): state(def_state){};
+	fsm_state operator*() const { return state;}
+	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
+	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
+	~FSM() = default;
+};
+
+
+enum using_share_enum {no_share,lsb_share,mid_share};
 
 class History
 {
@@ -112,9 +129,7 @@ public:
 		return retval;
 	}
 
-	
-
-private:
+	private:
 	bool isGlobalHist;
 	unsigned historySize;
 	unsigned tagSize;
@@ -126,15 +141,28 @@ private:
 	uint32_t* tags;
 };
 
-/*********************************************************************************************/
-// class Tables
-// {
-// public:
-// 	Tables(/* args */);
-// 	~Tables();
-// private:
-// };
-/*********************************************************************************************/
+/**
+ * @brief 
+ * 
+ */
+class Table
+{
+private:
+	std::vector<FSM> fsm_array;
+public:
+	Table(int fsmSize,int fsmState): fsm_array(fsmSize,fsm_state(fsmState)){}
+	fsm_state operator[](int index) const {return *fsm_array[index];}
+	void update(int index, bool taken);
+	~Table() = default;
+};
+
+void Table::update(int index, bool taken)
+{
+	if (taken)
+		++fsm_array[index];
+	else
+		--fsm_array[index];
+}
 
 class BP
 {

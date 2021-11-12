@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
 	"files.associations": {
 		"make": "makefile",
 		"cctype": "cpp",
@@ -46,4 +47,10 @@
 		"streambuf": "cpp",
 		"typeinfo": "cpp"
 	}
+=======
+    "files.associations": {
+        "*.h": "cpp",
+        "bitset": "cpp"
+    }
+>>>>>>> FSM+Tables
 }
