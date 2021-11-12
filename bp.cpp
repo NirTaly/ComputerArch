@@ -10,25 +10,16 @@ public:
 	BP();
 	~BP();
 private:
-	/* data */
+	History history;
+	Tables tables;
 };
 
 class History
-class LocalHistory
 {
 public:
-	LocalHistory(/* args */);
-	~LocalHistory();
+	History(/* args */);
+	~History();
 private:
-};
-
-class GlobalHistory
-{
-public:
-	GlobalHistory(/* args */);
-	~GlobalHistory();
-private:
-	
 };
 
 class LocalTables
