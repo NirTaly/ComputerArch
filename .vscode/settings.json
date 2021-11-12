@@ -1,6 +1,7 @@
 {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "files.associations": {
         "*.h": "cpp",
         "bitset": "cpp"
@@ -8,6 +9,8 @@
 =======
 =======
 >>>>>>> FSM+Tables
+=======
+>>>>>>> cpp
 	"files.associations": {
 		"make": "makefile",
 		"cctype": "cpp",
@@ -59,10 +62,67 @@
 >>>>>>> cpp
 =======
 =======
+=======
+>>>>>>> cpp
     "files.associations": {
         "*.h": "cpp",
         "bitset": "cpp"
     }
+<<<<<<< HEAD
 >>>>>>> FSM+Tables
+<<<<<<< HEAD
 >>>>>>> FSM+Tables
+=======
+=======
+=======
+	"files.associations": {
+		"make": "makefile",
+		"cctype": "cpp",
+		"clocale": "cpp",
+		"cmath": "cpp",
+		"cstdarg": "cpp",
+		"cstddef": "cpp",
+		"cstdio": "cpp",
+		"cstdlib": "cpp",
+		"cwchar": "cpp",
+		"cwctype": "cpp",
+		"array": "cpp",
+		"atomic": "cpp",
+		"bit": "cpp",
+		"*.tcc": "cpp",
+		"bitset": "cpp",
+		"cstdint": "cpp",
+		"deque": "cpp",
+		"unordered_map": "cpp",
+		"vector": "cpp",
+		"exception": "cpp",
+		"algorithm": "cpp",
+		"functional": "cpp",
+		"iterator": "cpp",
+		"memory": "cpp",
+		"memory_resource": "cpp",
+		"numeric": "cpp",
+		"optional": "cpp",
+		"random": "cpp",
+		"string": "cpp",
+		"string_view": "cpp",
+		"system_error": "cpp",
+		"tuple": "cpp",
+		"type_traits": "cpp",
+		"utility": "cpp",
+		"fstream": "cpp",
+		"initializer_list": "cpp",
+		"iosfwd": "cpp",
+		"istream": "cpp",
+		"limits": "cpp",
+		"new": "cpp",
+		"ostream": "cpp",
+		"sstream": "cpp",
+		"stdexcept": "cpp",
+		"streambuf": "cpp",
+		"typeinfo": "cpp"
+	}
+>>>>>>> cpp
+>>>>>>> cpp
+>>>>>>> cpp
 }
