@@ -29,7 +29,8 @@ public:
 /*									Classes													 */
 /*********************************************************************************************/
 
-enum using_share_enum {no_share,lsb_share,mid_share};
+
+typedef enum {SNT,WNT,WT,ST} fsm_state;
 
 static unsigned log2(unsigned n)
 {
@@ -38,12 +39,30 @@ static unsigned log2(unsigned n)
 	return count;
 }
 
-class History
+class FSM
+{
+private:
+	fsm_state state;
+public:
+	FSM(fsm_state def_state): state(def_state){};
+	fsm_state operator*() const { return state;}
+	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
+	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
+	~FSM() = default;
+};
+
+/*********************************************************************************************/
+/*********************************************************************************************/
+
+enum using_share_enum {no_share,lsb_share,mid_share};
+
+class BTB
 {
 public:
-	History(unsigned btbSize, unsigned historySize, unsigned tagSize, bool isGlobalHist, int Shared)
-		: isGlobalHist(isGlobalHist), historySize(historySize), tagSize(tagSize), 
-			btbSize(btbSize), shared(using_share_enum(Shared)), histo_mask(UINT32_MAX >> (32-historySize))
+	BTB(unsigned btbSize, unsigned historySize, unsigned tagSize, bool isGlobalHist, int Shared) :
+		isGlobalHist(isGlobalHist), historySize(historySize), tagSize(tagSize), 
+			btbSize(btbSize), shared(using_share_enum(Shared)), histo_mask(UINT32_MAX >> (32-historySize)),
+				histo(nullptr), tags(nullptr), targets(nullptr)
 	{
 		if (historySize < 1 || historySize > 8 || tagSize > 30-log2(btbSize))
 		{
@@ -53,77 +72,96 @@ public:
 		if (isGlobalHist)
 		{
 			histo = new uint32_t(0);
+			
 		}
 		else
 		{
 			histo = new uint32_t[btbSize]();
-			tags = new uint32_t[btbSize]();
 		}
+
+		tags = new uint32_t[btbSize]();
+		targets = new uint32_t[btbSize]();
 	}
 
-	~History()
+	~BTB()
 	{
-		delete[] histo;
 		if (!isGlobalHist)
-			delete[] tags;
+		{
+			delete[] histo;
+		}
+		else
+		{
+			delete histo;
+		}
+
+		delete[] tags;
+		delete[] targets;
 	}
 	
 	// if new branch - init history, return 1
 	// else - update relevant history, return 0
-	uint32_t update(uint32_t pc, bool isTaken)
+	uint32_t update(uint32_t pc, bool isTaken, uint32_t target_pc)
 	{
 		uint32_t tag_mask = UINT32_MAX >> (32-tagSize);
 		uint32_t tag = tag_mask & (pc>>(log2(btbSize)+2));
 		
 		uint32_t btb_mask = UINT32_MAX >> (32-btbSize);
-		uint32_t btb = btb_mask & (pc>>2);
+		uint32_t btb_i = btb_mask & (pc>>2);
 
 		uint32_t retval = 0;
 		uint32_t* curr_histo;
 		
-		getTableIndex(pc, &curr_histo);
+		getTableIndex(pc);
 
 		*curr_histo <<=1;
 		*curr_histo &= histo_mask;				// to stay in range [0..2^histoSize]
 		*curr_histo |= isTaken;
 
-		if (!isGlobalHist && tags[btb] != tag) 	// if new branch or collision
+		if (!isGlobalHist && tags[btb_i] != tag) 	// if new branch or collision
 		{
 			*curr_histo = 0;
-			tags[btb] = tag;
+			tags[btb_i] = tag;
 			
 			retval = 1;
 		}
 		
 		return retval;
 	}
+/*********************************************************************************************/
 
-	uint32_t getTableIndex(uint32_t pc, uint32_t** curr_histo)
+	/**
+	 * @brief Get the Tables Index - dont check whether <pc> is currently in btb
+	 * 			so need to call Function predict first
+	 * @param pc 
+	 * @return uint32_t 
+	 */
+	uint32_t getTableIndex(uint32_t pc)
 	{
 		uint32_t btb_mask = UINT32_MAX >> (32-btbSize);
-		uint32_t btb = btb_mask & (pc>>2);
+		uint32_t btb_i = btb_mask & (pc>>2);
 
 		uint32_t retval = 0;
-	
+		uint32_t curr_histo = 0;
+
 		if (isGlobalHist)
 		{
-			*curr_histo = histo;
+			curr_histo = *histo;
 		}
 		else
 		{
-			*curr_histo = histo+btb;
+			curr_histo = histo[btb_i];
 		}
 
 		switch (shared)
 		{
 		case no_share:
-			retval = **curr_histo;
+			retval = curr_histo;
 			break;
 		case lsb_share:
-			retval = (**curr_histo ^ (pc>>2)) & histo_mask;
+			retval = (curr_histo ^ (pc>>2)) & histo_mask;
 			break;
 		case mid_share:
-			retval = (**curr_histo ^ (pc>>16)) & histo_mask;
+			retval = (curr_histo ^ (pc>>16)) & histo_mask;
 			break;
 		default:
 			throw(std::runtime_error("Bad Shared Arg"));
@@ -132,6 +170,80 @@ public:
 
 		return retval;
 	}
+/*********************************************************************************************/
+
+	/**
+	 * @brief check if pc is branch, if no/new - <target_pc> = pc+4, <histo> = 0
+	 * 				else, <target_pc> = next pc, <histo> = curr histo
+	 * @param pc 
+	 * @param target_pc 
+	 * @param histo 
+	 * @return true if is known branch, false if no/new branch
+	 */
+	uint32_t predictTarget(uint32_t pc)
+	{	
+		uint32_t predict_target = pc+4;
+		if (!isKnownBranch(pc))
+		{
+			predict_target = targets[getBTBIndex(pc)];
+		}
+
+		return predict_target;
+	}
+/*********************************************************************************************/
+
+	/**
+	 * @brief check if pc is known branch using tag
+	 * @param pc 
+	 * @return true if known, false if unknown
+	 */
+	bool isKnownBranch(uint32_t pc)
+	{
+		uint32_t tag_mask = UINT32_MAX >> (32-tagSize);
+		uint32_t tag = tag_mask & (pc>>(log2(btbSize)+2));
+		
+		return (tags[getBTBIndex(pc)] == tag);
+	}
+/*********************************************************************************************/
+
+	/**
+	 * @brief find histo fo pc - if unknown branch - return 0 (for safety check isKnownBranch() first)
+	 * for global history - return curr histo, for loacl history - return histo[btb_i]
+	 * @param pc 
+	 * @return uint32_t history
+	 */
+	uint32_t findCurrHisto(uint32_t pc)
+	{
+		uint32_t curr_histo = 0;
+		if (isKnownBranch(pc))
+		{
+			if (isGlobalHist)
+			{
+				curr_histo = *histo;
+			}
+			else
+			{
+				curr_histo = histo[getBTBIndex(pc)];
+			}
+		}
+
+		return curr_histo;
+	}
+/*********************************************************************************************/
+	
+	/**
+	 * @brief get btb index out of pc, using bit manipulation
+	 * @param pc 
+	 * @return uint32_t btb_index
+	 */
+	uint32_t getBTBIndex(uint32_t pc)
+	{
+		uint32_t btb_mask = UINT32_MAX >> (32-btbSize);
+		uint32_t btb_i = btb_mask & (pc>>2);
+
+		return btb_i;
+	}
+
 
 private:
 	bool isGlobalHist;
@@ -141,9 +253,13 @@ private:
 	using_share_enum shared;
 
 	uint32_t histo_mask;	// to keep histo size correct to histoSize
+	
 	uint32_t* histo;
 	uint32_t* tags;
+	uint32_t* targets;
 };
+/*********************************************************************************************/
+/*********************************************************************************************/
 	
 
 /**
@@ -171,9 +287,28 @@ void Table::update(int index, bool taken)
 
 
 
-/*********************************************************************************************/
+/**
+ * @brief 
+ * 
+ */
+class Table
+{
+private:
+	std::vector<FSM> fsm_array;
+public:
+	Table(int fsmSize,int fsmState): fsm_array(fsmSize,fsm_state(fsmState)){}
+	fsm_state operator[](int index) const {return *fsm_array[index];}
+	void update(int index, bool taken);
+	~Table() = default;
+};
 
-/*********************************************************************************************/
+void Table::update(int index, bool taken)
+{
+	if (taken)
+		++fsm_array[index];
+	else
+		--fsm_array[index];
+}
 
 class BP
 {
@@ -182,7 +317,7 @@ public:
 	~BP();
 private:
 
-	History history;
+	BTB btb;
 	// Tables tables;
 };
 

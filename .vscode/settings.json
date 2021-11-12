@@ -1,10 +1,13 @@
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
     "files.associations": {
         "*.h": "cpp",
         "bitset": "cpp"
     }
 =======
+=======
+>>>>>>> FSM+Tables
 	"files.associations": {
 		"make": "makefile",
 		"cctype": "cpp",
@@ -52,5 +55,14 @@
 		"streambuf": "cpp",
 		"typeinfo": "cpp"
 	}
+<<<<<<< HEAD
 >>>>>>> cpp
+=======
+=======
+    "files.associations": {
+        "*.h": "cpp",
+        "bitset": "cpp"
+    }
+>>>>>>> FSM+Tables
+>>>>>>> FSM+Tables
 }
