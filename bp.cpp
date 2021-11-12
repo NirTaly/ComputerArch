@@ -44,18 +44,18 @@ private:
  * @brief 
  * 
  */
-class Tables
+class Table
 {
 private:
 	std::vector<FSM> fsm_array;
 public:
-	Tables(int fsmSize,int fsmState): fsm_array(fsmSize,fsm_state(fsmState)){}
+	Table(int fsmSize,int fsmState): fsm_array(fsmSize,fsm_state(fsmState)){}
 	fsm_state operator[](int index) const {return *fsm_array[index];}
 	void update(int index, bool taken);
-	~Tables() = default;
+	~Table() = default;
 };
 
-void Tables::update(int index, bool taken)
+void Table::update(int index, bool taken)
 {
 	if (taken)
 		++fsm_array[index];
