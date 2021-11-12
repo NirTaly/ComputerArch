@@ -50,6 +50,14 @@ public:
 	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
 	~FSM() = default;
 };
+enum using_share_enum {no_share,lsb_share,mid_share};
+
+static unsigned log2(unsigned n)
+{
+	int count = 0;
+	for (; n != 0; count++, n>>=1) { }
+	return count;
+}
 
 /*********************************************************************************************/
 /*********************************************************************************************/
@@ -311,7 +319,6 @@ public:
 	BP();
 	~BP();
 private:
-
 	BTB btb;
 	// Tables tables;
 };
