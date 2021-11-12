@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"files.associations": {
 		"make": "makefile",
 		"cctype": "cpp",
@@ -57,6 +58,8 @@
 >>>>>>> FSM+Tables
 =======
 >>>>>>> cpp
+=======
+>>>>>>> FSM+Tables
     "files.associations": {
         "*.h": "cpp",
         "bitset": "cpp"
@@ -69,6 +72,8 @@
 =======
 >>>>>>> cpp
 =======
+=======
+>>>>>>> FSM+Tables
 	"files.associations": {
 		"make": "makefile",
 		"cctype": "cpp",
@@ -116,11 +121,23 @@
 		"streambuf": "cpp",
 		"typeinfo": "cpp"
 	}
+<<<<<<< HEAD
 >>>>>>> cpp
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> cpp
 =======
 >>>>>>> FSM+Tables
 =======
 >>>>>>> cpp
+=======
+=======
+=======
+    "files.associations": {
+        "*.h": "cpp",
+        "bitset": "cpp"
+    }
+>>>>>>> FSM+Tables
+>>>>>>> FSM+Tables
+>>>>>>> FSM+Tables
 }

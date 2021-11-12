@@ -10,56 +10,14 @@
 using std::bitset;
 
 
-typedef enum {SNT = 0,WNT,WT,ST} fsm_state;
-
-class FSM
+static unsigned log2(unsigned n)
 {
-private:
-	fsm_state state;
-public:
-	FSM(fsm_state def_state): state(def_state){};
-	fsm_state operator*() const { return state;}
-	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
-	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
-	~FSM() = default;
-};
-
-
+	int count = 0;
+	for (; n != 0; count++, n>>=1) { }
+	return count;
+}
 /*********************************************************************************************/
 /*									Classes													 */
-/*********************************************************************************************/
-
-
-typedef enum {SNT,WNT,WT,ST} fsm_state;
-
-static unsigned log2(unsigned n)
-{
-	int count = 0;
-	for (; n != 0; count++, n>>=1) { }
-	return count;
-}
-
-class FSM
-{
-private:
-	fsm_state state;
-public:
-	FSM(fsm_state def_state): state(def_state){};
-	fsm_state operator*() const { return state;}
-	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
-	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
-	~FSM() = default;
-};
-enum using_share_enum {no_share,lsb_share,mid_share};
-
-static unsigned log2(unsigned n)
-{
-	int count = 0;
-	for (; n != 0; count++, n>>=1) { }
-	return count;
-}
-
-/*********************************************************************************************/
 /*********************************************************************************************/
 
 enum using_share_enum {no_share,lsb_share,mid_share};
@@ -264,7 +222,21 @@ uint32_t BTB::getBTBIndex(uint32_t pc)
 }
 /*********************************************************************************************/
 /*********************************************************************************************/
-	
+
+typedef enum {SNT = 0,WNT,WT,ST} fsm_state;
+
+class FSM
+{
+private:
+	fsm_state state;
+public:
+	FSM(fsm_state def_state): state(def_state){};
+	fsm_state operator*() const { return state;}
+	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
+	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
+	~FSM() = default;
+};
+
 /**
  * @brief 
  * 
@@ -319,6 +291,7 @@ public:
 	BP();
 	~BP();
 private:
+
 	BTB btb;
 	// Tables tables;
 };
