@@ -2,7 +2,25 @@
 /* This file should hold your implementation of the predictor simulator */
 
 #include <bitset>
+#include <vector>
 #include "bp_api.h"
+
+using std::bitset;
+
+
+typedef enum {SNT = 0,WNT,WT,ST} fsm_state;
+
+class FSM
+{
+private:
+	fsm_state state;
+public:
+	FSM(fsm_state def_state): state(def_state){};
+	fsm_state operator*() const { return state;}
+	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
+	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
+	~FSM() = default;
+};
 
 class BP
 {
@@ -22,13 +40,28 @@ public:
 private:
 };
 
-class LocalTables
+/**
+ * @brief 
+ * 
+ */
+class Tables
 {
-public:
-	LocalTables(/* args */);
-	~LocalTables();
 private:
+	std::vector<FSM> fsm_array;
+public:
+	Tables(int fsmSize,int fsmState): fsm_array(fsmSize,fsm_state(fsmState)){}
+	fsm_state operator[](int index) const {return *fsm_array[index];}
+	void update(int index, bool taken);
+	~Tables() = default;
 };
+
+void Tables::update(int index, bool taken)
+{
+	if (taken)
+		++fsm_array[index];
+	else
+		--fsm_array[index];
+}
 
 class GlobalTables
 {
