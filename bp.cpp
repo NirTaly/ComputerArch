@@ -9,7 +9,6 @@
 
 using std::bitset;
 
-
 typedef enum {SNT = 0,WNT,WT,ST} fsm_state;
 
 class FSM
@@ -30,26 +29,12 @@ public:
 /*********************************************************************************************/
 
 
-typedef enum {SNT,WNT,WT,ST} fsm_state;
-
 static unsigned log2(unsigned n)
 {
 	int count = 0;
 	for (; n != 0; count++, n>>=1) { }
 	return count;
 }
-
-class FSM
-{
-private:
-	fsm_state state;
-public:
-	FSM(fsm_state def_state): state(def_state){};
-	fsm_state operator*() const { return state;}
-	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
-	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
-	~FSM() = default;
-};
 
 /*********************************************************************************************/
 /*********************************************************************************************/
