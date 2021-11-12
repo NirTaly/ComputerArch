@@ -1,6 +1,7 @@
 {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"files.associations": {
 		"make": "makefile",
 		"cctype": "cpp",
@@ -51,10 +52,13 @@
 =======
 =======
 >>>>>>> cpp
+=======
+>>>>>>> FSM+Tables
     "files.associations": {
         "*.h": "cpp",
         "bitset": "cpp"
     }
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> FSM+Tables
 =======
@@ -108,4 +112,6 @@
 	}
 >>>>>>> cpp
 >>>>>>> cpp
+=======
+>>>>>>> FSM+Tables
 }
