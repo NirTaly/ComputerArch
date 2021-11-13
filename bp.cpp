@@ -9,25 +9,6 @@
 
 using std::bitset;
 
-typedef enum {SNT = 0,WNT,WT,ST} fsm_state;
-
-class FSM
-{
-private:
-	fsm_state state;
-public:
-	FSM(fsm_state def_state): state(def_state){};
-	fsm_state operator*() const { return state;}
-	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
-	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
-	~FSM() = default;
-};
-
-
-/*********************************************************************************************/
-/*									Classes													 */
-/*********************************************************************************************/
-
 
 static unsigned log2(unsigned n)
 {
@@ -35,8 +16,8 @@ static unsigned log2(unsigned n)
 	for (; n != 0; count++, n>>=1) { }
 	return count;
 }
-
 /*********************************************************************************************/
+/*									Classes													 */
 /*********************************************************************************************/
 
 enum using_share_enum {no_share,lsb_share,mid_share};
@@ -241,7 +222,21 @@ uint32_t BTB::getBTBIndex(uint32_t pc)
 }
 /*********************************************************************************************/
 /*********************************************************************************************/
-	
+
+typedef enum {SNT = 0,WNT,WT,ST} fsm_state;
+
+class FSM
+{
+private:
+	fsm_state state;
+public:
+	FSM(fsm_state def_state): state(def_state){};
+	fsm_state operator*() const { return state;}
+	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
+	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
+	~FSM() = default;
+};
+
 /**
  * @brief 
  * 
@@ -293,20 +288,35 @@ void Table::update(int index, bool taken)
 class BP
 {
 public:
-	BP();
+	BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
+			bool isGlobalHist, bool isGlobalTable, int Shared);
 	~BP();
+
+	bool predict(uint32_t pc, uint32_t *dst);
+
+	void update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst);
+
+	void BP_GetStats(SIM_stats *curStats);
 private:
 
 	BTB btb;
-	// Tables tables;
+	Table tables;
+	SIM_stats stats;
 };
 
+BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
+			bool isGlobalHist, bool isGlobalTable, int Shared): 
+				btb(btbSize,historySize,tagSize,isGlobalHist,Shared), tables(btbSize,fsmState) { }	// table size?
 
 /*********************************************************************************************/
 /*********************************************************************************************/
 
+BP* bp;
 int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
 			bool isGlobalHist, bool isGlobalTable, int Shared){
+
+	bp = new BP(btbSize, historySize,tagSize,fsmState,isGlobalHist,isGlobalTable,Shared);
+
 	return -1;
 }
 
