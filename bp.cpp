@@ -236,11 +236,8 @@ public:
 	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
 	~FSM() = default;
 };
+/*********************************************************************************************/
 
-/**
- * @brief 
- * 
- */
 class Table
 {
 private:
@@ -259,31 +256,7 @@ void Table::update(int index, bool taken)
 	else
 		--fsm_array[index];
 }
-
-
-
-/**
- * @brief 
- * 
- */
-class Table
-{
-private:
-	std::vector<FSM> fsm_array;
-public:
-	Table(int fsmSize,int fsmState): fsm_array(fsmSize,fsm_state(fsmState)){}
-	fsm_state operator[](int index) const {return *fsm_array[index];}
-	void update(int index, bool taken);
-	~Table() = default;
-};
-
-void Table::update(int index, bool taken)
-{
-	if (taken)
-		++fsm_array[index];
-	else
-		--fsm_array[index];
-}
+/*********************************************************************************************/
 
 class BP
 {
