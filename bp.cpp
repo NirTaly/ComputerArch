@@ -103,7 +103,6 @@ BTB::BTB(unsigned btbSize, unsigned historySize, unsigned tagSize, bool isGlobal
 	if (isGlobalHist)
 	{
 		histo = new uint32_t(0);
-		
 	}
 	else
 	{
@@ -237,6 +236,7 @@ public:
 	~FSM() = default;
 };
 /*********************************************************************************************/
+/*********************************************************************************************/
 
 class Table
 {
@@ -257,6 +257,27 @@ void Table::update(int index, bool taken)
 		--fsm_array[index];
 }
 /*********************************************************************************************/
+/*********************************************************************************************/
+
+class Tables
+{
+public:
+	Tables(unsigned historySize, unsigned fsmState, bool isGlobalTable, int Shared);
+	~Tables();
+private:
+	unsigned historySize;
+	unsigned fsmState;
+	bool isGlobalTable;
+	using_share_enum shared;
+
+	std::vector<Table> tables;
+};
+
+Tables::Tables(unsigned historySize, unsigned fsmState, bool isGlobalTable, int Shared) :
+	historySize(historySize), fsmState(fsmState), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared)),
+		tables()
+/*********************************************************************************************/
+/*********************************************************************************************/
 
 class BP
 {
@@ -273,7 +294,7 @@ public:
 private:
 
 	BTB btb;
-	Table tables;
+	Tables tables;
 	SIM_stats stats;
 };
 
@@ -285,6 +306,7 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 /*********************************************************************************************/
 
 BP* bp;
+
 int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
 			bool isGlobalHist, bool isGlobalTable, int Shared){
 
