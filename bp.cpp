@@ -8,7 +8,7 @@
 #include "bp_api.h"
 
 using std::bitset;
-
+const int NUM_OF_GLOBAL_TABLE = 1;
 
 static unsigned log2(unsigned n)
 {
@@ -243,8 +243,22 @@ class Table
 private:
 	std::vector<FSM> fsm_array;
 public:
-	Table(int fsmSize,int fsmState): fsm_array(fsmSize,fsm_state(fsmState)){}
+	Table(int fsmSize,fsm_state fsmState): fsm_array(fsmSize,fsmState){}
+
+	/**
+	 * @brief operator for getting the state of FSM in index "index"
+	 * 
+	 * @param index - the index of the FSM in the Table
+	 * @return fsm_state the current state
+	 */
 	fsm_state operator[](int index) const {return *fsm_array[index];}
+
+	/**
+	 * @brief updating an FSM in the given index
+	 * 
+	 * @param index  the index of the FSM
+	 * @param taken  the update. TRUE if Taken, FALSE if NotTaken
+	 */
 	void update(int index, bool taken);
 	~Table() = default;
 };
@@ -261,21 +275,37 @@ void Table::update(int index, bool taken)
 
 class Tables
 {
-public:
-	Tables(unsigned historySize, unsigned fsmState, bool isGlobalTable, int Shared);
-	~Tables();
 private:
 	unsigned historySize;
-	unsigned fsmState;
+	unsigned btbSize;
+	fsm_state fsmState;
 	bool isGlobalTable;
-	using_share_enum shared;
-
+	using_share_enum shared; 
 	std::vector<Table> tables;
+	
+public:
+	Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool isGlobalTable, int Shared);
+	bool getPrediction();
+	updateFSM();
+	clearTable();
+	~Tables();
 };
 
-Tables::Tables(unsigned historySize, unsigned fsmState, bool isGlobalTable, int Shared) :
-	historySize(historySize), fsmState(fsmState), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared)),
-		tables()
+Tables::Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool isGlobalTable, int Shared) :
+	historySize(historySize), btbSize(btbSize), fsmState(fsm_state(fsmState)), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared)),tables()
+{
+	if(isGlobalTable)
+	{
+		tables = std::vector<Table>(NUM_OF_GLOBAL_TABLE,Table(historySize,fsmState));
+	}
+	else
+	{
+		tables = std::vector<Table>(btbSize,Table(historySize,fsmState));
+	}	
+}
+
+
+
 /*********************************************************************************************/
 /*********************************************************************************************/
 
