@@ -175,7 +175,7 @@ uint32_t BTB::getTableIndex(uint32_t pc)
 	return retval;
 }
 /*****************************************************************************************************************/
-uint32_t BTB::predictTarget(uint32_t pc)
+uint32_t BTB::predictTarget(uint32_t pc) 
 {	
 	uint32_t predict_target = pc+4;
 	if (!isKnownBranch(pc))
