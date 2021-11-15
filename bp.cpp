@@ -286,7 +286,7 @@ private:
 	unsigned btbSize;
 	fsm_state fsmState;
 	bool isGlobalTable;
-	using_share_enum shared; 
+	using_share_enum shared;
 	std::vector<Table> tables;
 	
 public:
