@@ -205,6 +205,7 @@ uint32_t* BTB::findCurrHisto(uint32_t pc)
 {
 	return (isGlobalHist ? histo : histo + getBTBIndex(pc));
 }
+
 /*****************************************************************************************************************/
 uint32_t BTB::getBTBIndex(uint32_t pc)
 {
@@ -409,26 +410,6 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 	stats.size += isGlobalTable ? 1<<(historySize+1): btbSize*(1<<(historySize+1));
 }
 
-void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
-{
-	uint32_t btb_i = btb.getBTBIndex(pc);
-	btb.update(pc,taken,pred_dst);
-	
-	uint32_t fsm_i = btb.getTableIndex(pc);
-
-	if (!btb.isKnownBranch(pc))
-	{
-		tables.clearTable(btb_i);
-	}
-	tables.updateFSM(btb_i,fsm_i,taken);
-
-	stats.br_num++;
-	if (targetPc != pred_dst)
-	{
-		stats.flush_num++;
-	}
-}
-
 bool BP::predict(uint32_t pc, uint32_t *dst)
 {
 	*dst = pc +4;
@@ -442,6 +423,26 @@ bool BP::predict(uint32_t pc, uint32_t *dst)
 	return prediction;
 }
 
+void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
+{
+	uint32_t btb_i = btb.getBTBIndex(pc);
+	
+	uint32_t fsm_i = btb.getTableIndex(pc);
+
+	if (!btb.isKnownBranch(pc))
+	{
+		tables.clearTable(btb_i);
+	}
+	
+	btb.update(pc,taken,pred_dst);
+	tables.updateFSM(btb_i,fsm_i,taken);
+
+	stats.br_num++;
+	if (targetPc != pred_dst)
+	{
+		stats.flush_num++;
+	}
+}
 
 /*********************************************************************************************/
 /*********************************************************************************************/
