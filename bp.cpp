@@ -290,7 +290,7 @@ public:
 };
 
 Tables::Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool isGlobalTable, int Shared) :
-	historySize(historySize), btbSize(btbSize), fsmState(fsm_state(fsmState)), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared)),tables()
+	historySize(historySize), btbSize(btbSize), fsmState(fsm_state(fsmState)), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared))
 {
 	if(isGlobalTable)
 	{
@@ -320,7 +320,6 @@ public:
 
 	void getStats(SIM_stats *curStats);
 private:
-
 	BTB btb;
 	Tables tables;
 	SIM_stats stats;
@@ -328,7 +327,7 @@ private:
 
 BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
 			bool isGlobalHist, bool isGlobalTable, int Shared): 
-				btb(btbSize,historySize,tagSize,isGlobalHist,Shared), 
+				btb(btbSize,historySize,tagSize,isGlobalHist,Shared),
 				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
 { 
 	stats.size = isGlobalHist ? historySize : btbSize*(tagSize + historySize);
@@ -347,8 +346,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 	try
 	{
 		bp = new BP(btbSize, historySize,tagSize,fsmState,isGlobalHist,isGlobalTable,Shared);
-	}
-	catch(const std::exception& e)
+	}	catch(const std::exception& e)
 	{
 		retval = -1;
 	}
