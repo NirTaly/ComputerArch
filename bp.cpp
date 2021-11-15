@@ -258,6 +258,7 @@ public:
 	 * @param taken  the update. TRUE if Taken, FALSE if NotTaken
 	 */
 	void update(int index, bool taken);
+
 	~Table() = default;
 };
 
@@ -282,11 +283,35 @@ private:
 	std::vector<Table> tables;
 	
 public:
-	Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool isGlobalTable, int Shared);
-	bool getPrediction();
-	updateFSM();
-	clearTable();
-	~Tables();
+	Tables(unsigned historySize, unsigned btbSize, fsm_state fsmState, bool isGlobalTable, int Shared);
+
+	/**
+	 * @brief Get the Prediction of the commend. True if taken, otherwise False
+	 * 
+	 * @param btb_index - the index of the table
+	 * @param fsm_index - the index of the state machine of the specific prediction
+	 * @return true if the state is ST or WT
+	 * @return false if the statr is SNT or WNT
+	 */
+	bool getPrediction(uint32_t btb_index, uint32_t fsm_index);
+
+	/**
+	 * @brief update the given fsm with the wtakenw value
+	 * 
+	 * @param btb_index - the index of the table
+	 * @param fsm_index - the index of the state machine of the specific prediction
+	 * @param taken if real branch resolve
+	 */
+	void updateFSM(uint32_t btb_index, uint32_t fsm_index, bool taken);
+
+	/**
+	 * @brief reset a whole table for the new entry in the BTB
+	 * 
+	 * @param btb_index - the index of the table
+	 */
+	void clearTable(uint32_t btb_index);
+
+	~Tables() = default;
 };
 
 Tables::Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool isGlobalTable, int Shared) :
@@ -303,7 +328,21 @@ Tables::Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool i
 }
 
 
+bool Tables::getPrediction(uint32_t btb_index, uint32_t fsm_index)
+{
+	fsm_state pred = tables[btb_index][fsm_index];
+	return (pred == ST || pred == WT);
+}
 
+void Tables::updateFSM(uint32_t btb_index, uint32_t fsm_index, bool taken)
+{
+	tables[btb_index].update(fsm_index, taken);
+}
+
+void Tables::clearTable(uint32_t btb_index)
+{
+	tables[btb_index] = Table(historySize,fsmState);
+}
 /*********************************************************************************************/
 /*********************************************************************************************/
 
