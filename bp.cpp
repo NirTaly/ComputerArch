@@ -318,6 +318,14 @@ public:
 	 */
 	void clearTable(uint32_t btb_index);
 
+	/**
+	 * @brief Get the Default Pred of the tables
+	 * 
+	 * @return true if taken
+	 * @return false if nottaken
+	 */
+	bool getDefaultPred(){return (fsmState == ST || fsmState == WT);}
+
 	~Tables() = default;
 };
 
