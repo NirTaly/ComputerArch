@@ -1,13 +1,11 @@
 /* 046267 Computer Architecture - Spring 2020 - HW #1 */
 /* This file should hold your implementation of the predictor simulator */
 
-#include <bitset>
 #include <vector>
 #include <stdexcept>
 
 #include "bp_api.h"
 
-using std::bitset;
 const int NUM_OF_GLOBAL_TABLE = 1;
 
 static unsigned log2(unsigned n)
@@ -320,7 +318,7 @@ public:
 
 	void update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst);
 
-	void BP_GetStats(SIM_stats *curStats);
+	void getStats(SIM_stats *curStats);
 private:
 
 	BTB btb;
@@ -330,7 +328,12 @@ private:
 
 BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
 			bool isGlobalHist, bool isGlobalTable, int Shared): 
-				btb(btbSize,historySize,tagSize,isGlobalHist,Shared), tables(btbSize,fsmState) { }	// table size?
+				btb(btbSize,historySize,tagSize,isGlobalHist,Shared), 
+				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
+{ 
+	stats.size = isGlobalHist ? historySize : btbSize*(tagSize + historySize);
+	stats.size += isGlobalTable ? 1>>(historySize+1): btbSize*(1>>(historySize+1));
+}
 
 /*********************************************************************************************/
 /*********************************************************************************************/
@@ -340,20 +343,28 @@ BP* bp;
 int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
 			bool isGlobalHist, bool isGlobalTable, int Shared){
 
-	bp = new BP(btbSize, historySize,tagSize,fsmState,isGlobalHist,isGlobalTable,Shared);
-
-	return -1;
+	int retval = 0;
+	try
+	{
+		bp = new BP(btbSize, historySize,tagSize,fsmState,isGlobalHist,isGlobalTable,Shared);
+	}
+	catch(const std::exception& e)
+	{
+		retval = -1;
+	}
+	
+	return retval;
 }
 
 bool BP_predict(uint32_t pc, uint32_t *dst){
-	return false;
+	return bp->predict(pc, dst);
 }
 
 void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
-	return;
+	bp->update(pc,targetPc,taken,pred_dst);
 }
 
 void BP_GetStats(SIM_stats *curStats){
-	return;
+	bp->getStats(curStats);
 }
 
