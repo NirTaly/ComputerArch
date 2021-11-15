@@ -327,21 +327,28 @@ Tables::Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool i
 	}	
 }
 
-
 bool Tables::getPrediction(uint32_t btb_index, uint32_t fsm_index)
 {
-	fsm_state pred = tables[btb_index][fsm_index];
+	fsm_state pred;
+	if(isGlobalTable)
+		pred = tables[NUM_OF_GLOBAL_TABLE][fsm_index];
+	else
+		pred = tables[btb_index][fsm_index];
 	return (pred == ST || pred == WT);
 }
 
 void Tables::updateFSM(uint32_t btb_index, uint32_t fsm_index, bool taken)
 {
-	tables[btb_index].update(fsm_index, taken);
+	if(isGlobalTable)
+		tables[NUM_OF_GLOBAL_TABLE].update(fsm_index, taken);
+	else
+		tables[btb_index].update(fsm_index, taken);
 }
 
 void Tables::clearTable(uint32_t btb_index)
 {
-	tables[btb_index] = Table(historySize,fsmState);
+	if(!isGlobalTable)
+		tables[btb_index] = Table(historySize,fsmState);
 }
 /*********************************************************************************************/
 /*********************************************************************************************/
