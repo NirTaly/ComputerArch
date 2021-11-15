@@ -183,11 +183,7 @@ uint32_t BTB::getTableIndex(uint32_t pc)
 uint32_t BTB::predictTarget(uint32_t pc) 
 {	
 	uint32_t predict_target = pc+4;
-<<<<<<< HEAD
 	if (isKnownBranch(pc))
-=======
-	if (!isKnownBranch(pc)) //why is there '!'
->>>>>>> prediction
 	{
 		predict_target = targets[getBTBIndex(pc)];
 	}
@@ -412,19 +408,6 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 { 
 	stats.size = isGlobalHist ? (historySize + VALID_BIT_SIZE) : btbSize*(tagSize + historySize + VALID_BIT_SIZE);
 	stats.size += isGlobalTable ? 1<<(historySize+1): btbSize*(1<<(historySize+1));
-}
-
-bool BP::predict(uint32_t pc, uint32_t *dst)
-{
-	*dst = pc +4;
-	if(!btb.isKnownBranch(pc))
-		return false;
-	uint32_t btb_index = btb.getBTBIndex(pc);
-	uint32_t fsm_index = btb.getTableIndex(pc);
-	bool prediction = tables.getPrediction(btb_index,fsm_index);
-	if(prediction)
-		*dst = btb.predictTarget(pc);
-	return prediction;
 }
 
 void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
