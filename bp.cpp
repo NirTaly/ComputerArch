@@ -311,6 +311,14 @@ public:
 	 */
 	void clearTable(uint32_t btb_index);
 
+	/**
+	 * @brief Get the Default Pred of the tables
+	 * 
+	 * @return true if taken
+	 * @return false if nottaken
+	 */
+	bool getDefaultPred(){return (fsmState == ST || fsmState == WT);}
+
 	~Tables() = default;
 };
 
@@ -378,7 +386,7 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
 { 
 	stats.size = isGlobalHist ? historySize : btbSize*(tagSize + historySize);
-	stats.size += isGlobalTable ? 1>>(historySize+1): btbSize*(1>>(historySize+1));
+	stats.size += isGlobalTable ? 1>>(historySize+1): btbSize*(1>>(historySize+1)); // 
 }
 
 /*********************************************************************************************/
