@@ -86,12 +86,13 @@ private:
 	uint32_t* histo;
 	uint32_t* tags;
 	uint32_t* targets;
+	bool* valid_bits;
 };
 /*****************************************************************************************************************/
 BTB::BTB(unsigned btbSize, unsigned historySize, unsigned tagSize, bool isGlobalHist, int Shared) :
 		isGlobalHist(isGlobalHist), historySize(historySize), tagSize(tagSize), 
 			btbSize(btbSize), shared(using_share_enum(Shared)), histo_mask(UINT32_MAX >> (32-historySize)),
-				histo(nullptr), tags(nullptr), targets(nullptr)
+				histo(nullptr), tags(nullptr), targets(nullptr), valid_bits(nullptr)
 {
 	if (historySize < 1 || historySize > 8 || tagSize > 30-log2(btbSize))
 	{
@@ -107,6 +108,7 @@ BTB::BTB(unsigned btbSize, unsigned historySize, unsigned tagSize, bool isGlobal
 		histo = new uint32_t[btbSize]();
 	}
 
+	valid_bits = new bool[btbSize]();
 	tags = new uint32_t[btbSize]();
 	targets = new uint32_t[btbSize]();
 }
@@ -124,6 +126,7 @@ BTB::~BTB()
 
 	delete[] tags;
 	delete[] targets;
+	delete[] valid_bits;
 }
 /*****************************************************************************************************************/
 void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
@@ -134,6 +137,7 @@ void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
 	uint32_t btb_i = getBTBIndex(pc);
 	uint32_t* curr_histo = findCurrHisto(pc);
 
+	valid_bit[btb_i] = true;
 	targets[btb_i] = target_pc;
 
 	if (!isKnownBranch(pc) && !isGlobalHist)
@@ -188,8 +192,10 @@ bool BTB::isKnownBranch(uint32_t pc)
 {
 	uint32_t tag_mask = UINT32_MAX >> (32-tagSize);
 	uint32_t tag = tag_mask & (pc>>(log2(btbSize)+2));
-	
-	return (tags[getBTBIndex(pc)] == tag);
+
+	uint32_t btb_i = getBTBIndex(pc);
+
+	return (valid_bit[btb_i] && tags[btb_i] == tag);
 }
 /*****************************************************************************************************************/
 uint32_t* BTB::findCurrHisto(uint32_t pc)
@@ -215,12 +221,13 @@ uint32_t BTB::getBTBIndex(uint32_t pc)
 	uint32_t btb_mask = UINT32_MAX >> (32-btbSize);
 	uint32_t btb_i = btb_mask & (pc>>2);
 
+	// return isGlobalHist ? 0 : btb_i;
 	return btb_i;
 }
 /*********************************************************************************************/
 /*********************************************************************************************/
 
-typedef enum {SNT = 0,WNT,WT,ST} fsm_state;
+typedef enum {SNT,WNT,WT,ST} fsm_state;
 
 class FSM
 {
@@ -323,7 +330,7 @@ public:
 };
 
 Tables::Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool isGlobalTable, int Shared) :
-	historySize(historySize), btbSize(btbSize), fsmState(fsm_state(fsmState)), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared)),tables()
+	historySize(historySize), btbSize(btbSize), fsmState(fsm_state(fsmState)), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared))
 {
 	if(isGlobalTable)
 	{
@@ -374,7 +381,6 @@ public:
 
 	void getStats(SIM_stats *curStats);
 private:
-
 	BTB btb;
 	Tables tables;
 	SIM_stats stats;
@@ -382,11 +388,12 @@ private:
 
 BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
 			bool isGlobalHist, bool isGlobalTable, int Shared): 
-				btb(btbSize,historySize,tagSize,isGlobalHist,Shared), 
+				btb(btbSize,historySize,tagSize,isGlobalHist,Shared),
 				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
 { 
 	stats.size = isGlobalHist ? historySize : btbSize*(tagSize + historySize);
-	stats.size += isGlobalTable ? 1>>(historySize+1): btbSize*(1>>(historySize+1)); // 
+	stats.size += isGlobalTable ? 1>>(historySize+1): btbSize*(1>>(historySize+1));
+	// VALID BIT??
 }
 
 /*********************************************************************************************/
@@ -401,8 +408,7 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned f
 	try
 	{
 		bp = new BP(btbSize, historySize,tagSize,fsmState,isGlobalHist,isGlobalTable,Shared);
-	}
-	catch(const std::exception& e)
+	}	catch(const std::exception& e)
 	{
 		retval = -1;
 	}
