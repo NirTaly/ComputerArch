@@ -332,6 +332,7 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 { 
 	stats.size = isGlobalHist ? historySize : btbSize*(tagSize + historySize);
 	stats.size += isGlobalTable ? 1>>(historySize+1): btbSize*(1>>(historySize+1));
+	// VALID BIT??
 }
 
 /*********************************************************************************************/
