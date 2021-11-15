@@ -140,7 +140,7 @@ void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
 
 	if (!isKnownBranch(pc) && !isGlobalHist)
 	{
-		*curr_histo = 0;
+		*curr_histo = (uint32_t)isTaken; // (isTaken ? 1 : 0)
 		tags[btb_i] = tag;
 	}
 	else
