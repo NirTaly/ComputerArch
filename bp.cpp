@@ -78,6 +78,7 @@ public:
 	 * @return uint32_t btb_index
 	 */
 	uint32_t getBTBIndex(uint32_t pc);
+	uint32_t getTag(uint32_t pc);
 
 private:
 	bool isGlobalHist;
@@ -136,22 +137,19 @@ BTB::~BTB()
 /*****************************************************************************************************************/
 void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
 {
-	uint32_t tag_mask = UINT32_MAX >> (32-tagSize);
-	uint32_t tag = tag_mask & (pc>>(log2(btbSize)+2));
-	
+	uint32_t tag = getTag(pc);
 	uint32_t btb_i = getBTBIndex(pc);
 	uint32_t* curr_histo = findCurrHisto(pc);
 
-	if (!isKnownBranch(pc))
-	{
-		if (!isGlobalHist)
-			*curr_histo = (uint32_t)isTaken; // (isTaken ? 1 : 0)
-	}
-	else
+	if (isKnownBranch(pc) || isGlobalHist)
 	{
 		*curr_histo <<=1;
 		*curr_histo &= histo_mask;				// to stay in range [0..2^histoSize]
 		*curr_histo |= isTaken;
+	}
+	else
+	{
+		*curr_histo = (uint32_t)isTaken; // (isTaken ? 1 : 0)
 	}
 
 	tags[btb_i] = tag;
@@ -164,7 +162,7 @@ uint32_t BTB::getTableIndex(uint32_t pc)
 	uint32_t retval = 0;
 	uint32_t* curr_histo = findCurrHisto(pc);
 
-	if (!isKnownBranch(pc))
+	if (!isKnownBranch(pc) && !isGlobalHist)
 	{
 		*curr_histo = 0;
 	}
@@ -187,6 +185,17 @@ uint32_t BTB::getTableIndex(uint32_t pc)
 
 	return retval;
 }
+
+uint32_t BTB::getTag(uint32_t pc)
+{
+	uint32_t tag_mask = UINT32_MAX >> (32-tagSize);
+	uint32_t tag = tag_mask & (pc>>(log2(btbSize)+2));
+
+	if (tagSize == 0)
+		tag = 0;
+	
+	return tag;
+}
 /*****************************************************************************************************************/
 uint32_t BTB::predictTarget(uint32_t pc) 
 {	
@@ -201,9 +210,7 @@ uint32_t BTB::predictTarget(uint32_t pc)
 /*****************************************************************************************************************/
 bool BTB::isKnownBranch(uint32_t pc)
 {
-	uint32_t tag_mask = UINT32_MAX >> (32-tagSize);
-	uint32_t tag = tag_mask & (pc>>(log2(btbSize)+2));
-
+	uint32_t tag = getTag(pc);
 	uint32_t btb_i = getBTBIndex(pc);
 
 	return (valid_bits[btb_i] && tags[btb_i] == tag);
@@ -449,7 +456,6 @@ void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
 	uint32_t btb_i = btb.getBTBIndex(pc);
 	uint32_t fsm_i = btb.getTableIndex(pc);
 	
-
 	if (!btb.isKnownBranch(pc))
 	{
 		tables.clearTable(btb_i);
