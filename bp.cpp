@@ -420,7 +420,6 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 { 
 	stats.size = isGlobalHist ? (historySize + VALID_BIT_SIZE) : btbSize*(tagSize + historySize + VALID_BIT_SIZE);
 	stats.size += isGlobalTable ? 1<<(historySize+2): btbSize*(1<<(historySize+2));
-	// VALID BIT??
 }
 
 bool BP::predict(uint32_t pc, uint32_t *dst)

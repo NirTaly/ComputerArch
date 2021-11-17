@@ -33,6 +33,8 @@
 
 #ignore testfiles
 .txt
+.trc
+.out
 tests/
 tests/testsHW1/
 tests/ref_results/
