@@ -27,7 +27,7 @@ RUN_DIFF = True
 BASE_INPUT_DIR = "./tests"
 BASE_DESIRED_OUTPUT_DIR = "./ref_results"
 BASE_MY_OUTPUT_DIR = "./cpp_out"
-MY_EXEC = "./build/main1"
+MY_EXEC = "./a.out"
 
 if __name__ == '__main__':
     os.system("> valgrind_log.txt")
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         if RUN_DIFF:
             os.system("echo '%s\n' >> diff_log.txt" % filename)
             diff_exit_code = os.system('diff %s %s >> diff_log.txt' % (
-                os.path.join(BASE_DESIRED_OUTPUT_DIR, 'py_out' + filename), os.path.join(BASE_MY_OUTPUT_DIR, 'cpp_out' + filename)
+                os.path.join(BASE_DESIRED_OUTPUT_DIR, filename[:-4] + ".out"), os.path.join(BASE_MY_OUTPUT_DIR, 'cpp_out' + filename)
             ))
             if diff_exit_code != 0:
                 print('Difference in outputs for %s. Check out diff_log.txt' % filename)

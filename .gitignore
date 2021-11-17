@@ -33,8 +33,11 @@
 
 #ignore testfiles
 .txt
+<<<<<<< HEAD
 .trc
 .out
+=======
+>>>>>>> prediction
 tests/
 tests/testsHW1/
 tests/ref_results/
