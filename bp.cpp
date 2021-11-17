@@ -6,7 +6,8 @@
 
 #include "bp_api.h"
 
-const int NUM_OF_GLOBAL_TABLE = 0;
+const int NUM_OF_GLOBAL_TABLE = 1;
+const int GLOBAL_TABLE = 0;	//index in table
 // const int EXE_FLUSH = 3;
 const int VALID_BIT_SIZE = 1;
 
@@ -343,7 +344,7 @@ bool Tables::getPrediction(uint32_t btb_index, uint32_t fsm_index)
 {
 	fsm_state pred;
 	if(isGlobalTable)
-		pred = tables[NUM_OF_GLOBAL_TABLE][fsm_index];
+		pred = tables[GLOBAL_TABLE][fsm_index];
 	else
 		pred = tables[btb_index][fsm_index];
 	return (pred == ST || pred == WT);
@@ -352,7 +353,7 @@ bool Tables::getPrediction(uint32_t btb_index, uint32_t fsm_index)
 void Tables::updateFSM(uint32_t btb_index, uint32_t fsm_index, bool taken)
 {
 	if(isGlobalTable)
-		tables[NUM_OF_GLOBAL_TABLE].update(fsm_index, taken);
+		tables[GLOBAL_TABLE].update(fsm_index, taken);
 	else
 		tables[btb_index].update(fsm_index, taken);
 }
