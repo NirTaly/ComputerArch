@@ -278,7 +278,7 @@ void Table::update(int index, bool taken)
 class Tables
 {
 private:
-	unsigned historySize;
+	unsigned num_of_tables;
 	unsigned btbSize;
 	fsm_state fsmState;
 	bool isGlobalTable;
@@ -326,15 +326,15 @@ public:
 };
 
 Tables::Tables(unsigned historySize,unsigned btbSize, fsm_state fsmState, bool isGlobalTable, int Shared) :
-	historySize(historySize), btbSize(btbSize), fsmState(fsm_state(fsmState)), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared))
+	num_of_tables(1<<historySize), btbSize(btbSize), fsmState(fsm_state(fsmState)), isGlobalTable(isGlobalTable), shared(using_share_enum(Shared))
 {
 	if(isGlobalTable)
 	{
-		tables = std::vector<Table>(NUM_OF_GLOBAL_TABLE,Table(historySize,fsmState));
+		tables = std::vector<Table>(NUM_OF_GLOBAL_TABLE,Table(num_of_tables,fsmState));
 	}
 	else
 	{
-		tables = std::vector<Table>(btbSize,Table(historySize,fsmState));
+		tables = std::vector<Table>(btbSize,Table(num_of_tables,fsmState));
 	}	
 }
 
@@ -359,7 +359,7 @@ void Tables::updateFSM(uint32_t btb_index, uint32_t fsm_index, bool taken)
 void Tables::clearTable(uint32_t btb_index)
 {
 	if(!isGlobalTable)
-		tables[btb_index] = Table(historySize,fsmState);
+		tables[btb_index] = Table(num_of_tables,fsmState);
 }
 /*********************************************************************************************/
 /*********************************************************************************************/
