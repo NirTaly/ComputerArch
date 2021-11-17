@@ -6,7 +6,7 @@
 
 #include "bp_api.h"
 
-const int NUM_OF_GLOBAL_TABLE = 1;
+const int NUM_OF_GLOBAL_TABLE = 0;
 // const int EXE_FLUSH = 3;
 const int VALID_BIT_SIZE = 1;
 
