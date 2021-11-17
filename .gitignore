@@ -34,8 +34,11 @@
 #ignore testfiles
 .txt
 <<<<<<< HEAD
+<<<<<<< HEAD
 .trc
 .out
+=======
+>>>>>>> prediction
 =======
 >>>>>>> prediction
 tests/
