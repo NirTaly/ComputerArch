@@ -442,6 +442,10 @@ void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
 	
 	btb.update(pc,taken,pred_dst);
 
+	if (!btb.isKnownBranch(pc))
+	{
+		tables.clearTable(btb_i);
+	}
 	tables.updateFSM(btb_i,fsm_i,taken);
 
 	if (targetPc != pred_dst)
