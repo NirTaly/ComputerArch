@@ -8,6 +8,7 @@
 
 const int NUM_OF_GLOBAL_TABLE = 1;
 const int EXE_FLUSH = 3;
+const int VALID_BIT_SIZE = 1;
 
 static unsigned log2(unsigned n)
 {
@@ -401,11 +402,11 @@ public:
 	void update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst);
 
 	/**
-	 * @brief Get the Stats object
+	 * @brief Get the SIM Stats object
 	 * 
-	 * @param curStats 
+	 * @param curStats The returned current simulator state 
 	 */
-	void getStats(SIM_stats *curStats);
+	void getStats(SIM_stats *curStats) {*curStats=stats;}
 private:
 	BTB btb;
 	Tables tables;
@@ -417,8 +418,8 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 				btb(btbSize,historySize,tagSize,isGlobalHist,Shared),
 				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
 { 
-	stats.size = isGlobalHist ? historySize : btbSize*(tagSize + historySize);
-	stats.size += isGlobalTable ? 1<<(historySize+1): btbSize*(1<<(historySize+1));
+	stats.size = isGlobalHist ? (historySize + VALID_BIT_SIZE) : btbSize*(tagSize + historySize + VALID_BIT_SIZE);
+	stats.size += isGlobalTable ? 1<<(historySize+2): btbSize*(1<<(historySize+2));
 	// VALID BIT??
 }
 
@@ -448,6 +449,7 @@ void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
 	}
 	tables.updateFSM(btb_i,fsm_i,taken);
 
+	stats.br_num++;
 	if (targetPc != pred_dst)
 	{
 		stats.flush_num += EXE_FLUSH;
