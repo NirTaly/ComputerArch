@@ -33,16 +33,4 @@
 
 #ignore testfiles
 .txt
-<<<<<<< HEAD
-<<<<<<< HEAD
-.trc
-.out
-=======
->>>>>>> prediction
-=======
->>>>>>> prediction
-tests/
-tests/testsHW1/
-tests/ref_results/
-input_examples/
-diff_log.txt
+/cpp_out

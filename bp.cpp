@@ -14,7 +14,7 @@ static unsigned log2(unsigned n)
 {
 	int count = 0;
 	for (; n != 0; count++, n>>=1) { }
-	return count;
+	return count-1;
 }
 
 /*********************************************************************************************/
@@ -209,10 +209,9 @@ uint32_t* BTB::findCurrHisto(uint32_t pc)
 /*****************************************************************************************************************/
 uint32_t BTB::getBTBIndex(uint32_t pc)
 {
-	uint32_t btb_mask = UINT32_MAX >> (32-btbSize);
+	uint32_t btb_mask = UINT32_MAX >> (32-log2(btbSize));
 	uint32_t btb_i = btb_mask & (pc>>2);
 
-	// return isGlobalHist ? 0 : btb_i;
 	return btb_i;
 }
 
@@ -250,6 +249,12 @@ public:
 	 */
 	fsm_state operator[](int index) const {return *fsm_array[index];}
 
+	Table& operator= (const Table& other)
+	{
+		fsm_array = other.fsm_array;
+
+		return *this;
+	}
 	/**
 	 * @brief updating an FSM in the given index
 	 * 
@@ -410,27 +415,6 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 	stats.size += isGlobalTable ? 1<<(historySize+1): btbSize*(1<<(historySize+1));
 }
 
-void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
-{
-	uint32_t btb_i = btb.getBTBIndex(pc);
-	
-	uint32_t fsm_i = btb.getTableIndex(pc);
-
-	if (!btb.isKnownBranch(pc))
-	{
-		tables.clearTable(btb_i);
-	}
-	
-	btb.update(pc,taken,pred_dst);
-	tables.updateFSM(btb_i,fsm_i,taken);
-
-	stats.br_num++;
-	if (targetPc != pred_dst)
-	{
-		stats.flush_num++;
-	}
-}
-
 bool BP::predict(uint32_t pc, uint32_t *dst)
 {
 	*dst = pc +4;
@@ -442,6 +426,27 @@ bool BP::predict(uint32_t pc, uint32_t *dst)
 	if(prediction)
 		*dst = btb.predictTarget(pc);
 	return prediction;
+}
+
+void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
+{
+	uint32_t btb_i = btb.getBTBIndex(pc);
+	
+	uint32_t fsm_i = btb.getTableIndex(pc);
+
+	if (!btb.isKnownBranch(pc))
+	{
+		tables.clearTable(btb_i);
+	}
+	
+	btb.update(pc,taken,targetPc);
+	tables.updateFSM(btb_i,fsm_i,taken);
+
+	stats.br_num++;
+	if ((taken && targetPc != pred_dst) || (!taken && pred_dst != pc+4))
+	{
+		stats.flush_num++;
+	}
 }
 
 /*********************************************************************************************/
