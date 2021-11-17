@@ -9,7 +9,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${fileDirname}/a.out",
-			"args": ["input_examples/example1.trc"],
+			"args": ["tests/example4.trc"],
 			"stopAtEntry": true,
 			"cwd": "${fileDirname}",
 			"environment": [],

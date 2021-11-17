@@ -8,10 +8,11 @@
 
 const int NUM_OF_GLOBAL_TABLE = 1;
 const int GLOBAL_TABLE = 0;	//index in table
+const int TARGET_SIZE = 30;
 // const int EXE_FLUSH = 3;
 const int VALID_BIT_SIZE = 1;
 
-static unsigned log2(unsigned n)
+static uint32_t log2(uint32_t n)
 {
 	int count = 0;
 	for (; n != 0; count++, n>>=1) { }
@@ -143,7 +144,8 @@ void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
 
 	if (!isKnownBranch(pc))
 	{
-		*curr_histo = (uint32_t)isTaken; // (isTaken ? 1 : 0)
+		if (!isGlobalHist)
+			*curr_histo = (uint32_t)isTaken; // (isTaken ? 1 : 0)
 	}
 	else
 	{
@@ -161,6 +163,11 @@ uint32_t BTB::getTableIndex(uint32_t pc)
 {
 	uint32_t retval = 0;
 	uint32_t* curr_histo = findCurrHisto(pc);
+
+	if (!isKnownBranch(pc))
+	{
+		*curr_histo = 0;
+	}
 
 	switch (shared)
 	{
@@ -210,9 +217,14 @@ uint32_t* BTB::findCurrHisto(uint32_t pc)
 /*****************************************************************************************************************/
 uint32_t BTB::getBTBIndex(uint32_t pc)
 {
-	uint32_t btb_mask = UINT32_MAX >> (32-log2(btbSize));
+	uint32_t log_btb = log2(btbSize);
+	
+	uint32_t btb_mask = UINT32_MAX >> (32-log_btb);
 	uint32_t btb_i = btb_mask & (pc>>2);
 
+	if (0 == log_btb)
+		btb_i = 0;
+	
 	return btb_i;
 }
 
@@ -413,7 +425,9 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
 { 
 	stats.br_num = 0; stats.flush_num = 0;
-	stats.size = isGlobalHist ? (historySize + VALID_BIT_SIZE) : btbSize*(tagSize + historySize + VALID_BIT_SIZE);
+
+	stats.size = btbSize*(tagSize + TARGET_SIZE + VALID_BIT_SIZE);
+	stats.size += isGlobalHist ? historySize : btbSize*historySize;
 	stats.size += isGlobalTable ? 1<<(historySize+1): btbSize*(1<<(historySize+1));
 }
 
@@ -433,8 +447,8 @@ bool BP::predict(uint32_t pc, uint32_t *dst)
 void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
 {
 	uint32_t btb_i = btb.getBTBIndex(pc);
-	
 	uint32_t fsm_i = btb.getTableIndex(pc);
+	
 
 	if (!btb.isKnownBranch(pc))
 	{
