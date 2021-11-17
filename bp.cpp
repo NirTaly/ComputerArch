@@ -137,7 +137,7 @@ void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
 	uint32_t btb_i = getBTBIndex(pc);
 	uint32_t* curr_histo = findCurrHisto(pc);
 
-	valid_bit[btb_i] = true;
+	valid_bits[btb_i] = true;
 	targets[btb_i] = target_pc;
 
 	if (!isKnownBranch(pc) && !isGlobalHist)
@@ -195,7 +195,7 @@ bool BTB::isKnownBranch(uint32_t pc)
 
 	uint32_t btb_i = getBTBIndex(pc);
 
-	return (valid_bit[btb_i] && tags[btb_i] == tag);
+	return (valid_bits[btb_i] && tags[btb_i] == tag);
 }
 /*****************************************************************************************************************/
 uint32_t* BTB::findCurrHisto(uint32_t pc)
