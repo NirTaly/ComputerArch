@@ -140,13 +140,9 @@ void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
 	uint32_t btb_i = getBTBIndex(pc);
 	uint32_t* curr_histo = findCurrHisto(pc);
 
-	valid_bits[btb_i] = true;
-	targets[btb_i] = target_pc;
-
-	if (!isKnownBranch(pc) && !isGlobalHist)
+	if (!isKnownBranch(pc))
 	{
-		*curr_histo = (uint32_t)isTaken; // (isTaken ? 1 : 0)
-		tags[btb_i] = tag;
+		histo[btb_i] = (uint32_t)isTaken; // (isTaken ? 1 : 0)
 	}
 	else
 	{
@@ -154,6 +150,10 @@ void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
 		*curr_histo &= histo_mask;				// to stay in range [0..2^histoSize]
 		*curr_histo |= isTaken;
 	}
+
+	tags[btb_i] = tag;
+	valid_bits[btb_i] = true;
+	targets[btb_i] = target_pc;
 }
 /*****************************************************************************************************************/
 uint32_t BTB::getTableIndex(uint32_t pc)
@@ -183,7 +183,7 @@ uint32_t BTB::getTableIndex(uint32_t pc)
 uint32_t BTB::predictTarget(uint32_t pc) 
 {	
 	uint32_t predict_target = pc+4;
-	if (!isKnownBranch(pc)) //why is there '!'
+	if (isKnownBranch(pc))
 	{
 		predict_target = targets[getBTBIndex(pc)];
 	}
@@ -203,20 +203,7 @@ bool BTB::isKnownBranch(uint32_t pc)
 /*****************************************************************************************************************/
 uint32_t* BTB::findCurrHisto(uint32_t pc)
 {
-	uint32_t* curr_histo = 0;
-	if (isKnownBranch(pc))
-	{
-		if (isGlobalHist)
-		{
-			curr_histo = histo;
-		}
-		else
-		{
-			curr_histo = histo + getBTBIndex(pc);
-		}
-	}
-
-	return curr_histo;
+	return (isGlobalHist ? histo : histo + getBTBIndex(pc));
 }
 /*****************************************************************************************************************/
 uint32_t BTB::getBTBIndex(uint32_t pc)
@@ -240,8 +227,8 @@ private:
 public:
 	FSM(fsm_state def_state): state(def_state){};
 	fsm_state operator*() const { return state;}
-	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1);}
-	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1);}
+	FSM&  operator++() {state = (state==ST) ? ST: fsm_state(state + 1); return *this;}
+	FSM& operator--(){state = (state==SNT) ? SNT: fsm_state(state - 1); return *this;}
 	~FSM() = default;
 };
 /*********************************************************************************************/
@@ -377,7 +364,7 @@ class BP
 public:
 	BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmState,
 			bool isGlobalHist, bool isGlobalTable, int Shared);
-	~BP();
+	~BP() = default;
 
 	/**
 	 * @brief turns the predictor's prediction (taken / not taken) and predicted target address
@@ -406,7 +393,7 @@ public:
 	 * 
 	 * @param curStats The returned current simulator state 
 	 */
-	void getStats(SIM_stats *curStats) {*curStats=stats;}
+	void getStats(SIM_stats *curStats) {*curStats=stats; }
 private:
 	BTB btb;
 	Tables tables;
@@ -419,7 +406,7 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
 { 
 	stats.size = isGlobalHist ? (historySize + VALID_BIT_SIZE) : btbSize*(tagSize + historySize + VALID_BIT_SIZE);
-	stats.size += isGlobalTable ? 1<<(historySize+2): btbSize*(1<<(historySize+2));
+	stats.size += isGlobalTable ? 1<<(historySize+1): btbSize*(1<<(historySize+1));
 }
 
 bool BP::predict(uint32_t pc, uint32_t *dst)
@@ -438,9 +425,9 @@ bool BP::predict(uint32_t pc, uint32_t *dst)
 void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
 {
 	uint32_t btb_i = btb.getBTBIndex(pc);
-	uint32_t fsm_i = btb.getTableIndex(pc);
-	
 	btb.update(pc,taken,pred_dst);
+	
+	uint32_t fsm_i = btb.getTableIndex(pc);
 
 	if (!btb.isKnownBranch(pc))
 	{
@@ -453,19 +440,6 @@ void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
 	{
 		stats.flush_num++;
 	}
-}
-
-bool BP::predict(uint32_t pc, uint32_t *dst)
-{
-	*dst = pc +4;
-	if(!btb.isKnownBranch(pc))
-		return false;
-	uint32_t btb_index = btb.getBTBIndex(pc);
-	uint32_t fsm_index = btb.getTableIndex(pc);
-	bool prediction = tables.getPrediction(btb_index,fsm_index);
-	if(prediction)
-		*dst = btb.predictTarget(pc);
-	return prediction;
 }
 
 /*********************************************************************************************/
@@ -498,4 +472,5 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
 
 void BP_GetStats(SIM_stats *curStats){
 	bp->getStats(curStats);
+	delete bp;
 }
