@@ -7,6 +7,7 @@
 #include "bp_api.h"
 
 const int NUM_OF_GLOBAL_TABLE = 1;
+const int EXE_FLUSH = 3;
 
 static unsigned log2(unsigned n)
 {
@@ -30,8 +31,8 @@ public:
 	/**
 	 * @brief in Exec - update BTB after actual instruction
 	 * @param pc 
-	 * @param isTaken
-	 * @param target_pc 
+	 * @param isTaken actual desicion of op.
+	 * @param target_pc actual target pc from op
 	 */
 	void update(uint32_t pc, bool isTaken, uint32_t target_pc);
 
@@ -388,6 +389,15 @@ public:
 	 */
 	bool predict(uint32_t pc, uint32_t *dst);
 
+	/**
+	 * @brief update history, FSM based on actual op. 
+	 * insert new op. to BTB even if NOT_TAKEN
+	 * 
+	 * @param pc 
+	 * @param targetPc actual op. target pc
+	 * @param taken actual branch desicion
+	 * @param pred_dst predicted target pc from BTB
+	 */
 	void update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst);
 
 	/**
@@ -408,7 +418,7 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
 { 
 	stats.size = isGlobalHist ? historySize : btbSize*(tagSize + historySize);
-	stats.size += isGlobalTable ? 1>>(historySize+1): btbSize*(1>>(historySize+1));
+	stats.size += isGlobalTable ? 1<<(historySize+1): btbSize*(1<<(historySize+1));
 	// VALID BIT??
 }
 
@@ -423,6 +433,21 @@ bool BP::predict(uint32_t pc, uint32_t *dst)
 	if(prediction)
 		*dst = btb.predictTarget(pc);
 	return prediction;
+}
+
+void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
+{
+	uint32_t btb_i = btb.getBTBIndex(pc);
+	uint32_t fsm_i = btb.getTableIndex(pc);
+	
+	btb.update(pc,taken,pred_dst);
+
+	tables.updateFSM(btb_i,fsm_i,taken);
+
+	if (targetPc != pred_dst)
+	{
+		stats.flush_num += EXE_FLUSH;
+	}
 }
 
 /*********************************************************************************************/
