@@ -7,7 +7,7 @@
 #include "bp_api.h"
 
 const int NUM_OF_GLOBAL_TABLE = 1;
-const int EXE_FLUSH = 3;
+// const int EXE_FLUSH = 3;
 const int VALID_BIT_SIZE = 1;
 
 static unsigned log2(unsigned n)
@@ -420,7 +420,6 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 { 
 	stats.size = isGlobalHist ? (historySize + VALID_BIT_SIZE) : btbSize*(tagSize + historySize + VALID_BIT_SIZE);
 	stats.size += isGlobalTable ? 1<<(historySize+2): btbSize*(1<<(historySize+2));
-	// VALID BIT??
 }
 
 bool BP::predict(uint32_t pc, uint32_t *dst)
@@ -452,7 +451,7 @@ void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
 	stats.br_num++;
 	if (targetPc != pred_dst)
 	{
-		stats.flush_num += EXE_FLUSH;
+		stats.flush_num++;
 	}
 }
 
