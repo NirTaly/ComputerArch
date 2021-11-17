@@ -112,6 +112,8 @@ int main(int argc, char **argv) {
 	BP_GetStats(&stats);
 	printf("flush_num: %d, br_num: %d, size: %db\n", stats.flush_num, stats.br_num, stats.size);
 
+	fclose(trace);
+	
 	return 0;
 }
 
