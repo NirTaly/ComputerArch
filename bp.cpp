@@ -7,7 +7,7 @@
 #include "bp_api.h"
 
 const int NUM_OF_GLOBAL_TABLE = 1;
-const int EXE_FLUSH = 3;
+// const int EXE_FLUSH = 3;
 const int VALID_BIT_SIZE = 1;
 
 static unsigned log2(unsigned n)
@@ -451,8 +451,21 @@ void BP::update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst)
 	stats.br_num++;
 	if (targetPc != pred_dst)
 	{
-		stats.flush_num += EXE_FLUSH;
+		stats.flush_num++;
 	}
+}
+
+bool BP::predict(uint32_t pc, uint32_t *dst)
+{
+	*dst = pc +4;
+	if(!btb.isKnownBranch(pc))
+		return false;
+	uint32_t btb_index = btb.getBTBIndex(pc);
+	uint32_t fsm_index = btb.getTableIndex(pc);
+	bool prediction = tables.getPrediction(btb_index,fsm_index);
+	if(prediction)
+		*dst = btb.predictTarget(pc);
+	return prediction;
 }
 
 /*********************************************************************************************/
