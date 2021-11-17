@@ -143,7 +143,7 @@ void BTB::update(uint32_t pc, bool isTaken, uint32_t target_pc)
 
 	if (!isKnownBranch(pc))
 	{
-		histo[btb_i] = (uint32_t)isTaken; // (isTaken ? 1 : 0)
+		*curr_histo = (uint32_t)isTaken; // (isTaken ? 1 : 0)
 	}
 	else
 	{
