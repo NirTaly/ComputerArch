@@ -461,6 +461,19 @@ bool BP::predict(uint32_t pc, uint32_t *dst)
 	return prediction;
 }
 
+bool BP::predict(uint32_t pc, uint32_t *dst)
+{
+	*dst = pc +4;
+	if(!btb.isKnownBranch(pc))
+		return false;
+	uint32_t btb_index = btb.getBTBIndex(pc);
+	uint32_t fsm_index = btb.getTableIndex(pc);
+	bool prediction = tables.getPrediction(btb_index,fsm_index);
+	if(prediction)
+		*dst = btb.predictTarget(pc);
+	return prediction;
+}
+
 /*********************************************************************************************/
 /*********************************************************************************************/
 
