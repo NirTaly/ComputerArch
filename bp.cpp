@@ -412,6 +412,7 @@ BP::BP(unsigned btbSize, unsigned historySize, unsigned tagSize, unsigned fsmSta
 				btb(btbSize,historySize,tagSize,isGlobalHist,Shared),
 				tables(historySize,btbSize,fsm_state(fsmState),isGlobalTable,Shared)
 { 
+	stats.br_num = 0; stats.flush_num = 0;
 	stats.size = isGlobalHist ? (historySize + VALID_BIT_SIZE) : btbSize*(tagSize + historySize + VALID_BIT_SIZE);
 	stats.size += isGlobalTable ? 1<<(historySize+1): btbSize*(1<<(historySize+1));
 }
