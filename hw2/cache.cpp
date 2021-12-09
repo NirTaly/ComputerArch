@@ -203,6 +203,6 @@ bool LevelCache::isDirty(unsigned long int address)
 }
 
 unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty) {} //dirty + address - must be together, we search in this func and remove together. We must return if it was dirty
-void LevelCache::update(unsigned long int address)
+void LevelCache::update(unsigned long int address) {}
 int LevelCache::getNumberOfAccess(){}
 int LevelCache::getNumberOfMiss(){}
