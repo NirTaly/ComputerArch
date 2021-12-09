@@ -5,6 +5,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "cache.cpp"
+
 using std::FILE;
 using std::string;
 using std::cout;
