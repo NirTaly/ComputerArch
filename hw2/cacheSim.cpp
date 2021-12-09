@@ -64,7 +64,8 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	
+	MemCache cache(MemCyc, BSize, L1Size, L2Size, L1Assoc, L2Assoc, L1Cyc, L2Cyc, WrAlloc);
+
 
 	while (getline(file, line)) {
 
@@ -91,11 +92,17 @@ int main(int argc, char **argv) {
 		// DEBUG - remove this line
 		cout << " (dec) " << num << endl;
 
+		if (operation == 'r')
+			cache.read(num);
+		else if (operation == 'w')
+			cache.write(num);
 	}
 
 	double L1MissRate;
 	double L2MissRate;
 	double avgAccTime;
+
+	cache.getRates(L1MissRate, L2MissRate, avgAccTime);
 
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);
