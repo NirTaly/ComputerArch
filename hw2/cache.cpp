@@ -56,10 +56,11 @@ public:
      */
     unsigned long int insert(unsigned long int address,bool &old_dirty); //dirty + address - must be together, we search in this func and remove together. We must return if it was dirty
     void update(unsigned long int address);
+    void remove(unsigned long int address);
     int getNumberOfAccess() { return num_of_access; }
     int getNumberOfMiss() { return num_of_miss; }
 private:
-    std::vector<CacheRow> cache_sets;
+    std::vector<CacheRow> cache_sets;s
     unsigned int set_size;
     unsigned long int num_of_access;
     unsigned int num_of_miss;
@@ -82,6 +83,7 @@ private:
     unsigned int number_of_mem_access;
     unsigned int block_s;
     void L1Insert(unsigned long int block_address);
+    void L2Insert(unsigned long int block_address);
     
 public:
     MemCache(unsigned int MemCyc, unsigned int BSize, unsigned int L1Size, unsigned int L2Size, unsigned int L1Assoc, unsigned int L2Assoc,unsigned int L1Cyc, unsigned int L2Cyc, unsigned int WrAlloc);
@@ -105,6 +107,20 @@ void MemCache::L1Insert(unsigned long int block_address)
         L2.update(old_address);
 }
 
+/**
+ * @brief Inserts the new block to L2. 
+ * if the old block was dirty in the theory we need to update mem - we done nothing
+ * we also need to remove the old block from L1. In the theory if it is dirty we have to update the mem.
+ * 
+ * @param block_address the new block to insert
+ */
+
+void MemCache::L2Insert(unsigned long int block_address)
+{                             
+    bool dirty = false;                                                 //                    tag  set
+    unsigned long int old_address = L2.insert(block_address, dirty);    // need to send as:   xxxx yyy      
+    L1.remove(old_address);
+}
 
 /**
  * @brief Construct a new Mem Cache:: Mem Cache object
@@ -144,7 +160,7 @@ void MemCache::read(unsigned long int address)
     else
     {
         number_of_mem_access++;
-        L2.insert(block_address, dirty);
+        L2Insert(block_address);
         L1Insert(block_address);
     }
 }
