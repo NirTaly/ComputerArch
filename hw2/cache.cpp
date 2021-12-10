@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <list>
 #include <vector>
 
@@ -19,16 +20,21 @@ static uint32_t log2(uint32_t n)
 class Block
 {
 public:
-    Block(unsigned long address, bool dirty = false, bool valid = false)
-        : address(address), dirty(dirty), valid(valid) {}
+    Block(unsigned long address = 0, bool dirty = false, bool valid = false) 
+        : address(address), dirty(dirty), valid(valid) { }
     ~Block() = default;
-    bool isDirty() { return dirty; }
-    unsigned long int getAddress() { return address; }
-    bool isValid() { return valid; }
-    void setAddress(unsigned long n_address) { address = n_address; }
-    void setDirty(bool n_dirty) { dirty = n_dirty; }
-    void setValid() { valid = false; }
+    bool isDirty() const                    { return dirty;         }
+    unsigned long int getAddress() const    { return address;       }
+    bool isValid() const                    { return valid;         }
+    void setAddress(unsigned long n_address){ address = n_address;  }
+    void setDirty(bool n_dirty)             { dirty = n_dirty;      }
+    void setValid()                         { valid = false;        }
 
+    // For Debuging
+    friend std::ostream& operator<< (std::ostream& out, const Block& b) { 
+		out << "address = " << b.address << ", dirty = " << std::boolalpha << b.dirty << ", valid = " << b.valid;
+		return out;
+    }
 private:
     bool valid;
     bool dirty;
@@ -39,13 +45,22 @@ class CacheRow
 {
 public:
     CacheRow(int block_size, int assoc);
-    ~CacheRow() = default;
+
     bool search(unsigned long int tag);
-    Block &update(unsigned long new_address, bool write); //return old_address
+    Block& findBlock(unsigned long int tag);
+    Block& update(unsigned long new_address, bool write); //return old_address
     bool isDirty(unsigned long int tag);
 
+    // For Debuging
+    friend std::ostream& operator<< (std::ostream& out, const CacheRow& cr) { 
+        for (const Block& b : cr.address_list)
+        {
+		    out << b << " | ";
+        }
+		return out;
+    }
 private:
-    list<Block> address;
+    list<Block> address_list;
     int block_size;
 };
 
@@ -87,6 +102,14 @@ public:
     int getNumberOfAccess() { return num_of_access; }
     int getNumberOfMiss() { return num_of_miss; }
 
+    // For Debuging
+    friend std::ostream& operator<< (std::ostream& out, const LevelCache& lc) { 
+        for (int i = 0; i < lc.cache_sets.size(); i++)
+        {
+		    out << i << "\t:" << lc.cache_sets[i] << std::endl;
+        }
+		return out;
+    }
 private:
     std::vector<CacheRow> cache_sets;
     unsigned int set_size;
@@ -310,7 +333,7 @@ Block &LevelCache::insert(unsigned long int address)
     return cache_sets[set].update(tag, WRITE);
 }
 
-unsigned long int LevelCache::insert(unsigned long int address, bool &old_dirty)
+unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty, bool dirty)
 {
     Block &block = insert(address);
     old_dirty = block.isDirty();
@@ -318,7 +341,41 @@ unsigned long int LevelCache::insert(unsigned long int address, bool &old_dirty)
     return block.getAddress();
 }
 
-void LevelCache::update(unsigned long int address)
+void LevelCache::update(unsigned long int address, bool dirty)
 {
     insert(address);
+}
+
+/*******************************************************************************/
+CacheRow::CacheRow(int block_size, int assoc) : address_list(assoc), block_size(block_size) {}
+
+bool CacheRow::search(unsigned long int tag)
+{
+    try
+    {
+        Block& b = findBlock(tag);
+        return true;
+    }
+    catch(const std::exception&)
+    {
+        return false;
+    }
+}
+Block& CacheRow::findBlock(unsigned long int tag)
+{
+    auto iter = std::find_if(address_list.begin(),address_list.end(), [tag](const Block& b){ return b.getAddress() == tag; });
+    
+    if (iter == address_list.end()) throw std::runtime_error("Not Found");
+
+    return *iter;
+}
+Block& CacheRow::update(unsigned long new_address, bool write)
+{
+    
+}
+bool CacheRow::isDirty(unsigned long int tag)
+{
+    auto iter = std::find_if(address_list.begin(),address_list.end(), [tag](const Block& b){ return (b.getAddress() == tag && b.isDirty()); });
+    
+    return iter != address_list.end();
 }
