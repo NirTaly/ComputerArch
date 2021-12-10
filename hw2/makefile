@@ -1,7 +1,20 @@
 # 046267 Computer Architecture - Winter 20/21 - HW #2
 
-cacheSim: cacheSim.cpp
-	g++ -o cacheSim cacheSim.cpp
+# Environment for C++ 
+CXX = g++
+CXXFLAGS = -std=c++11 -g -Wall -Wextra -pedantic-errors -Werror
+
+# Automatically detect whether the bp is C or C++
+SRC = $(wildcard cacheSim.cpp cache.cpp)
+
+OBJ = $(patsubst %.cpp,%.o,$(SRC))
+
+cacheSim: $(OBJ)
+	$(CXX) -o $@ $(OBJ)
+
+$(OBJ): %.o: %.cpp
+	$(CXX) -c $(CXXFLAGS)  -o $@ $^ -lm
+
 
 .PHONY: clean
 clean:

@@ -4,6 +4,9 @@
 
 using std::list;
 
+const bool WRITE = true;
+const bool READ = false;
+
 static uint32_t log2(uint32_t n)
 {
 	int count = 0;
@@ -48,14 +51,32 @@ public:
     bool search(unsigned long int address);
     bool isDirty(unsigned long int address);
     /**
-     * @brief 
+     * @brief insert address to cache.
+     * if already in: make block as LRU
+     * else: insert new block , and make as LRU
+     * 
+     * @param address address of new op.
+     * @return the overwriten block (prev).
+     * if prev.address == address -> same block and only LRU update
+     */
+    Block& insert(unsigned long int address);
+
+    /**
+     * @brief insert new address to cache
      * 
      * @param address 
      * @param old_dirty 
-     * @return unsigned long int old address
+     * @return old address (LRU address),
      */
-    unsigned long int insert(unsigned long int address,bool &old_dirty); //dirty + address - must be together, we search in this func and remove together. We must return if it was dirty
+    unsigned long int insert(unsigned long int address,bool &old_dirty);
+    
+    /**
+     * @brief address is already in cache, so need to update place in LRU (become front of the list)
+     * 
+     * @param address 
+     */
     void update(unsigned long int address);
+    
     int getNumberOfAccess() { return num_of_access; }
     int getNumberOfMiss() { return num_of_miss; }
 private:
@@ -202,7 +223,23 @@ bool LevelCache::isDirty(unsigned long int address)
     return cache_sets[set].isDirty(tag);
 }
 
-unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty) {} //dirty + address - must be together, we search in this func and remove together. We must return if it was dirty
-void LevelCache::update(unsigned long int address) {}
-int LevelCache::getNumberOfAccess(){}
-int LevelCache::getNumberOfMiss(){}
+Block& LevelCache::insert(unsigned long int address)
+{
+    uint64_t set = address & set_mask;
+    uint64_t tag = address>>set_size;
+
+    return cache_sets[set].update(tag, WRITE);
+}
+
+unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty)
+{
+    Block& block = insert(address);
+    old_dirty = block.isDirty();
+
+    return block.getAddress();
+}
+
+void LevelCache::update(unsigned long int address)
+{
+    insert(address);
+}
