@@ -4,6 +4,9 @@
 
 using std::list;
 
+const bool WRITE = true;
+const bool READ = false;
+
 static uint32_t log2(uint32_t n)
 {
 	int count = 0;
@@ -48,19 +51,38 @@ public:
     bool search(unsigned long int address);
     bool isDirty(unsigned long int address);
     /**
-     * @brief 
+     * @brief insert address to cache.
+     * if already in: make block as LRU
+     * else: insert new block , and make as LRU
+     * 
+     * @param address address of new op.
+     * @return the overwriten block (prev).
+     * if prev.address == address -> same block and only LRU update
+     */
+    Block& insert(unsigned long int address);
+
+    /**
+     * @brief insert new address to cache
      * 
      * @param address 
      * @param old_dirty 
-     * @return unsigned long int old address
+     * @param dirty  true if we write, false if we read.
+     * @return old address (LRU address),
      */
-    unsigned long int insert(unsigned long int address,bool &old_dirty); //dirty + address - must be together, we search in this func and remove together. We must return if it was dirty
-    void update(unsigned long int address);
+    unsigned long int insert(unsigned long int address,bool &old_dirty, bool dirty = false);
+    
+    /**
+     * @brief address is already in cache, so need to update place in LRU (become front of the list)
+     * 
+     * @param address 
+     * @param dirty true if we write, false if we read.
+     */
+    void update(unsigned long int address, bool dirty = false);
     void remove(unsigned long int address);
     int getNumberOfAccess() { return num_of_access; }
     int getNumberOfMiss() { return num_of_miss; }
 private:
-    std::vector<CacheRow> cache_sets;s
+    std::vector<CacheRow> cache_sets;
     unsigned int set_size;
     unsigned long int num_of_access;
     unsigned int num_of_miss;
@@ -82,8 +104,11 @@ private:
     unsigned int number_of_access;
     unsigned int number_of_mem_access;
     unsigned int block_s;
-    void L1Insert(unsigned long int block_address);
-    void L2Insert(unsigned long int block_address);
+
+    void L1Insert(unsigned long int block_address, bool dirty = false);
+    void L2Insert(unsigned long int block_address, bool dirty = false);
+    void writeAllocate(unsigned long int block_address);
+    void writeNoAllocate(unsigned long int block_address);
     
 public:
     MemCache(unsigned int MemCyc, unsigned int BSize, unsigned int L1Size, unsigned int L2Size, unsigned int L1Assoc, unsigned int L2Assoc,unsigned int L1Cyc, unsigned int L2Cyc, unsigned int WrAlloc);
@@ -94,16 +119,21 @@ public:
 };
 
 
+/*********************************************************************************************/
+/*									MemCache functions   									 */
+/*********************************************************************************************/
+
 /**
  * @brief Inserts the new block to L1. if the old block was dirty it updates L2.
  * 
  * @param block_address the new block to insert
+ * @param dirty true if we write to the block
  */
-void MemCache::L1Insert(unsigned long int block_address)
+void MemCache::L1Insert(unsigned long int block_address, bool dirty = false)
 {
-    bool dirty = false;                                                 //                    tag  set
-    unsigned long int old_address = L1.insert(block_address, dirty);    // need to send as:   xxxx yyy      without offset
-    if(dirty)
+    bool old_dirty = false;                                                 //                    tag  set
+    unsigned long int old_address = L1.insert(block_address, old_dirty, dirty);    // need to send as:   xxxx yyy      without offset
+    if(old_dirty)
         L2.update(old_address);
 }
 
@@ -113,14 +143,54 @@ void MemCache::L1Insert(unsigned long int block_address)
  * we also need to remove the old block from L1. In the theory if it is dirty we have to update the mem.
  * 
  * @param block_address the new block to insert
+ * @param dirty true if we write to the block
  */
 
-void MemCache::L2Insert(unsigned long int block_address)
+void MemCache::L2Insert(unsigned long int block_address,bool dirty = false)
 {                             
-    bool dirty = false;                                                 //                    tag  set
-    unsigned long int old_address = L2.insert(block_address, dirty);    // need to send as:   xxxx yyy      
+    bool old_dirty = false;                                                 //                    tag  set
+    unsigned long int old_address = L2.insert(block_address, old_dirty, dirty);    // need to send as:   xxxx yyy      
     L1.remove(old_address);
 }
+
+/**
+ * @brief execute write with allocation
+ * 
+ * @param block_address the address of the block to write to
+ */
+void MemCache::writeAllocate(unsigned long int block_address)
+{
+    if(L1.search(block_address))
+        L1.update(block_address, true);
+    else
+    {
+        L1Insert(block_address, true);
+        if (L2.search(block_address))
+            L2.update(block_address);
+        else
+        {
+           L2Insert(block_address);
+           number_of_mem_access++; 
+        }
+    }
+}
+
+
+/**
+ * @brief execute write without allocate
+ * 
+ * @param block_address the address of the block to write to
+ */
+void MemCache::writeNoAllocate(unsigned long int block_address)
+{
+    if(L1.search(block_address))
+        L1.update(block_address, true);
+    else if (L2.search(block_address))
+        L2.update(block_address, true);
+    else
+        number_of_mem_access++;    
+}
+    
 
 /**
  * @brief Construct a new Mem Cache:: Mem Cache object
@@ -172,7 +242,12 @@ void MemCache::read(unsigned long int address)
  */
 void MemCache::write(unsigned long int address)
 {
-
+    number_of_access++;
+    unsigned long int block_address = address >> block_s;
+    if(allocate)
+        writeAllocate(block_address);
+    else
+        writeNoAllocate(block_address);
 }
 
 /**
@@ -187,8 +262,10 @@ void MemCache::getRates(double& L1MissRate, double& L2MissRate,double& avgAccTim
 
 }
 
+/*********************************************************************************************/
+/*									LevelCache functions   									 */
+/*********************************************************************************************/
 
-/*******************************************************************************/
 LevelCache::LevelCache(unsigned int size, unsigned int assoc, unsigned int block_size)
     : cache_sets((1<<block_size) / assoc,CacheRow(block_size,assoc)), set_size(log2(cache_sets.size())), 
         num_of_access(0), num_of_miss(0) 
@@ -218,7 +295,23 @@ bool LevelCache::isDirty(unsigned long int address)
     return cache_sets[set].isDirty(tag);
 }
 
-unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty) {} //dirty + address - must be together, we search in this func and remove together. We must return if it was dirty
-void LevelCache::update(unsigned long int address) {}
-int LevelCache::getNumberOfAccess(){}
-int LevelCache::getNumberOfMiss(){}
+Block& LevelCache::insert(unsigned long int address)
+{
+    uint64_t set = address & set_mask;
+    uint64_t tag = address>>set_size;
+
+    return cache_sets[set].update(tag, WRITE);
+}
+
+unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty)
+{
+    Block& block = insert(address);
+    old_dirty = block.isDirty();
+
+    return block.getAddress();
+}
+
+void LevelCache::update(unsigned long int address)
+{
+    insert(address);
+}
