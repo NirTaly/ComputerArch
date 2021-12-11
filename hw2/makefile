@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -std=c++11 -g -Wall -Wextra -pedantic-errors -Werror
 
 # Automatically detect whether the bp is C or C++
-SRC = $(wildcard cacheSim.cpp cache.cpp)
+SRC = $(wildcard cacheSim.cpp)
 
 OBJ = $(patsubst %.cpp,%.o,$(SRC))
 

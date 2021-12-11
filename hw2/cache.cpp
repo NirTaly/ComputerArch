@@ -107,7 +107,7 @@ public:
 
     // For Debuging
     friend std::ostream& operator<< (std::ostream& out, const LevelCache& lc) { 
-        for (int i = 0; i < lc.cache_sets.size(); i++)
+        for (size_t i = 0; i < lc.cache_sets.size(); i++)
         {
 		    out << i << "\t:" << lc.cache_sets[i] << std::endl;
         }
@@ -141,6 +141,13 @@ private:
     void writeAllocate(unsigned long int block_address);
     void writeNoAllocate(unsigned long int block_address);
 
+ friend std::ostream& operator<<(std::ostream& os, const MemCache& cache){
+        os << "L1" << std::endl;
+        os << cache.L1 << std::endl;
+        os << "L2" << std::endl;
+        os << cache.L2 << std::endl;
+        return os;
+    }
 public:
     MemCache(unsigned int MemCyc, unsigned int BSize, unsigned int L1Size, unsigned int L2Size, unsigned int L1Assoc, unsigned int L2Assoc, unsigned int L1Cyc, unsigned int L2Cyc, unsigned int WrAlloc);
     ~MemCache() = default;
@@ -159,7 +166,7 @@ public:
  * @param block_address the new block to insert
  * @param dirty true if we write to the block
  */
-void MemCache::L1Insert(unsigned long int block_address, bool dirty = false)
+void MemCache::L1Insert(unsigned long int block_address, bool dirty)
 {
     bool old_dirty = false;    
 
@@ -177,7 +184,7 @@ void MemCache::L1Insert(unsigned long int block_address, bool dirty = false)
  * @param block_address the new block to insert
  * @param dirty true if we write to the block
  */
-void MemCache::L2Insert(unsigned long int block_address, bool dirty = false)
+void MemCache::L2Insert(unsigned long int block_address, bool dirty)
 {
     bool old_dirty = false;
     // think should use the Block insert() function - where can see if <old_block> was invalid/dirty/fine
@@ -247,7 +254,7 @@ void MemCache::read(unsigned long int address)
 {
     num_of_access++;    // shouldnt it be inside every cache?
     unsigned long int block_address = address >> block_s;
-    bool dirty = false;
+    // bool dirty = false;
     if (L1.search(block_address))   //should refer to dirty bit?
     {
         L1.update(block_address);   
@@ -303,7 +310,7 @@ void MemCache::getRates(double &L1MissRate, double &L2MissRate, double &avgAccTi
 /*********************************************************************************************/
 
 LevelCache::LevelCache(unsigned int size, unsigned int assoc, unsigned int block_size)
-    : cache_sets((1 << block_size) / assoc, CacheRow(block_size, assoc)), set_size(log2(cache_sets.size())),
+    : cache_sets(1<<(size-block_size-assoc), CacheRow(block_size, assoc)), set_size(log2(cache_sets.size())),
       num_of_access(0), num_of_miss(0)
 {
     set_mask = INT64_MAX;
@@ -367,13 +374,14 @@ void LevelCache::remove(unsigned long int address)
 /*********************************************************************************************/
 /*									CacheRow functions   									 */
 /*********************************************************************************************/
-CacheRow::CacheRow(int block_size, int assoc) : address_list(assoc), block_size(block_size) {}
+CacheRow::CacheRow(int block_size, int assoc) : address_list(1<<assoc), block_size(block_size) {}
 
 bool CacheRow::search(unsigned long int tag)
 {
     try
     {
         Block& b = findBlock(tag);
+        (void)b;    // only for compiler not to scream, if block found -> dont throw
     }
     catch(const std::exception&)
     {
@@ -384,7 +392,7 @@ bool CacheRow::search(unsigned long int tag)
 }
 Block& CacheRow::findBlock(unsigned long int tag)
 {
-    auto iter = std::find_if(address_list.begin(),address_list.end(), [tag](const Block& b){ return b.getAddress() == tag; });
+    auto iter = std::find_if(address_list.begin(),address_list.end(), [tag](const Block& b){ return b.getAddress() == tag && b.isValid(); });
     
     if (iter == address_list.end()) throw std::runtime_error("Not Found");
 
@@ -393,7 +401,7 @@ Block& CacheRow::findBlock(unsigned long int tag)
 Block CacheRow::update(unsigned long new_address, bool write)
 {
     Block curr_block = findBlock(new_address); 
-    address_list.remove(curr_block);
+    address_list.erase(std::find(address_list.begin(),address_list.end(),curr_block));
 
     curr_block.setDirty(write);
     
@@ -409,7 +417,7 @@ Block CacheRow::insert(unsigned long tag, bool write)
     if (iter != address_list.end())
     {
       rem_block = *iter;
-      address_list.remove(rem_block);
+      address_list.erase(iter);
     } 
     else
     {
