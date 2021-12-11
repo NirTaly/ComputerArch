@@ -49,7 +49,8 @@ public:
 
     bool search(unsigned long int tag);
     Block& findBlock(unsigned long int tag);
-    Block& update(unsigned long new_address, bool write); //return old_address
+    Block update(unsigned long new_address, bool write);
+    Block insert(unsigned long new_address, bool write);
     void remove(unsigned long int address);
     bool isDirty(unsigned long int tag);
 
@@ -74,14 +75,14 @@ public:
     bool isDirty(unsigned long int address);
     /**
      * @brief insert address to cache.
-     * if already in: make block as LRU
-     * else: insert new block , and make as LRU
+     * if already in: make block as Most Recently Used
+     * else: insert new block , and make as Most Recently Used
      * 
      * @param address address of new op.
      * @return the overwriten block (prev).
-     * if prev.address == address -> same block and only LRU update
+     * if prev.address == address -> same block and only Most Recently Used update
      */
-    Block &insert(unsigned long int address);
+    Block insert(unsigned long int address, bool dirty);
 
     /**
      * @brief insert new address to cache
@@ -94,7 +95,7 @@ public:
     unsigned long int insert(unsigned long int address, bool &old_dirty, bool dirty = false);
 
     /**
-     * @brief address is already in cache, so need to update place in LRU (become front of the list)
+     * @brief address is already in cache, so need to update place in Most Recently Used (become front of the list)
      * 
      * @param address 
      * @param dirty true if we write, false if we read.
@@ -160,8 +161,10 @@ public:
  */
 void MemCache::L1Insert(unsigned long int block_address, bool dirty = false)
 {
-    bool old_dirty = false;                                                     //                    tag  set
-    unsigned long int old_address = L1.insert(block_address, old_dirty, dirty); // need to send as:   xxxx yyy      without offset
+    bool old_dirty = false;    
+
+    // think should use the Block insert() function - where can see if <old_block> was invalid/dirty/fine
+    unsigned long int old_address = L1.insert(block_address, old_dirty, dirty);
     if (old_dirty)
         L2.update(old_address);
 }
@@ -176,8 +179,9 @@ void MemCache::L1Insert(unsigned long int block_address, bool dirty = false)
  */
 void MemCache::L2Insert(unsigned long int block_address, bool dirty = false)
 {
-    bool old_dirty = false;                                                     //                    tag  set
-    unsigned long int old_address = L2.insert(block_address, old_dirty, dirty); // need to send as:   xxxx yyy
+    bool old_dirty = false;
+    // think should use the Block insert() function - where can see if <old_block> was invalid/dirty/fine
+    unsigned long int old_address = L2.insert(block_address, old_dirty, dirty); 
     L1.remove(old_address);
 }
 
@@ -241,14 +245,14 @@ MemCache::MemCache(unsigned int MemCyc, unsigned int BSize, unsigned int L1Size,
  */
 void MemCache::read(unsigned long int address)
 {
-    num_of_access++;
+    num_of_access++;    // shouldnt it be inside every cache?
     unsigned long int block_address = address >> block_s;
     bool dirty = false;
-    if (L1.search(block_address))
+    if (L1.search(block_address))   //should refer to dirty bit?
     {
-        L1.update(block_address);
+        L1.update(block_address);   
     }
-    else if (L2.search(block_address))
+    else if (L2.search(block_address))    //should refer to dirty bit?
     {
         L2.update(block_address);
         L1Insert(block_address);
@@ -268,7 +272,7 @@ void MemCache::read(unsigned long int address)
  */
 void MemCache::write(unsigned long int address)
 {
-    num_of_access++;
+    num_of_access++;    // shouldnt it be inside every cache?
     unsigned long int block_address = address >> block_s;
     if (allocate)
         writeAllocate(block_address);
@@ -327,25 +331,31 @@ bool LevelCache::isDirty(unsigned long int address)
     return cache_sets[set].isDirty(tag);
 }
 
-Block &LevelCache::insert(unsigned long int address)
+Block LevelCache::insert(unsigned long int address,bool dirty)
 {
     uint64_t set = address & set_mask;
     uint64_t tag = address >> set_size;
 
-    return cache_sets[set].update(tag, WRITE);
+    return cache_sets[set].insert(tag, dirty);
 }
 
 unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty, bool dirty)
 {
-    // Block &block = insert(address);
-    // old_dirty = block.isDirty();
+    uint64_t set = address & set_mask;
+    uint64_t tag = address >> set_size;
+    
+    Block rem_block = cache_sets[set].insert(tag,dirty);
 
-    // return block.getAddress();
+    old_dirty = rem_block.isDirty();
+    return rem_block.getAddress();
 }
 
 void LevelCache::update(unsigned long int address, bool dirty)
 {
-    // insert(address);
+    uint64_t set = address & set_mask;
+    uint64_t tag = address >> set_size;
+
+    cache_sets[set].update(tag,dirty);
 }
 void LevelCache::remove(unsigned long int address)
 {
@@ -380,23 +390,43 @@ Block& CacheRow::findBlock(unsigned long int tag)
 
     return *iter;
 }
-Block& CacheRow::update(unsigned long new_address, bool write)
+Block CacheRow::update(unsigned long new_address, bool write)
 {
     Block curr_block = findBlock(new_address); 
     address_list.remove(curr_block);
 
-    if (write)
-    {
-        curr_block.setDirty(true);
-    }
+    curr_block.setDirty(write);
     
     address_list.push_front(curr_block);
+
+    return curr_block;
+}
+Block CacheRow::insert(unsigned long tag, bool write)
+{
+    auto iter = std::find_if(address_list.begin(),address_list.end(), [tag](const Block& b){ return b.getAddress() == tag || !b.isValid(); });
+    Block rem_block;
+
+    if (iter != address_list.end())
+    {
+      rem_block = *iter;
+      address_list.remove(rem_block);
+    } 
+    else
+    {
+        rem_block = address_list.back(); // return LRU
+        address_list.pop_back();
+    } 
+
+    Block new_block(tag,write,true);
+    address_list.push_front(new_block);
+    
+    return rem_block;
 }
 void CacheRow::remove(unsigned long int address)
 {
     Block curr_block = findBlock(address); 
     address_list.remove(curr_block);
-    address_list.push_front(Block());   // after remove the place should be the LRU (?)
+    address_list.push_back(Block());
 }
 bool CacheRow::isDirty(unsigned long int tag)
 {
