@@ -400,7 +400,13 @@ void CacheRow::remove(unsigned long int address)
 }
 bool CacheRow::isDirty(unsigned long int tag)
 {
-    auto iter = std::find_if(address_list.begin(),address_list.end(), [tag](const Block& b){ return (b.getAddress() == tag && b.isDirty()); });
-    
-    return iter != address_list.end();
+    try
+    {
+        Block& b = findBlock(tag);
+        return b.isDirty();
+    }
+    catch(const std::exception&)
+    {
+        return false;
+    }
 }
