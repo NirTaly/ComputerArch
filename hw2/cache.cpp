@@ -22,13 +22,14 @@ class Block
 public:
     Block(unsigned long address = 0, bool dirty = false, bool valid = false) 
         : address(address), dirty(dirty), valid(valid) { }
-    ~Block() = default;
-    bool isDirty() const                    { return dirty;         }
-    unsigned long int getAddress() const    { return address;       }
-    bool isValid() const                    { return valid;         }
-    void setAddress(unsigned long n_address){ address = n_address;  }
-    void setDirty(bool n_dirty)             { dirty = n_dirty;      }
-    void setValid()                         { valid = false;        }
+    
+    bool isDirty() const                    { return dirty;                 }
+    unsigned long int getAddress() const    { return address;               }
+    bool isValid() const                    { return valid;                 }
+    void setAddress(unsigned long n_address){ address = n_address;          }
+    void setDirty(bool n_dirty)             { dirty = n_dirty;              }
+    void setValid()                         { valid = false;                }
+    bool operator==(const Block& other)     {return other.address==address; }
 
     // For Debuging
     friend std::ostream& operator<< (std::ostream& out, const Block& b) { 
@@ -36,9 +37,9 @@ public:
 		return out;
     }
 private:
-    bool valid;
-    bool dirty;
     unsigned long int address;
+    bool dirty;
+    bool valid;
 };
 
 class CacheRow
@@ -49,6 +50,7 @@ public:
     bool search(unsigned long int tag);
     Block& findBlock(unsigned long int tag);
     Block& update(unsigned long new_address, bool write); //return old_address
+    void remove(unsigned long int address);
     bool isDirty(unsigned long int tag);
 
     // For Debuging
@@ -335,18 +337,26 @@ Block &LevelCache::insert(unsigned long int address)
 
 unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty, bool dirty)
 {
-    Block &block = insert(address);
-    old_dirty = block.isDirty();
+    // Block &block = insert(address);
+    // old_dirty = block.isDirty();
 
-    return block.getAddress();
+    // return block.getAddress();
 }
 
 void LevelCache::update(unsigned long int address, bool dirty)
 {
-    insert(address);
+    // insert(address);
 }
+void LevelCache::remove(unsigned long int address)
+{
+    uint64_t set = address & set_mask;
+    uint64_t tag = address >> set_size;
 
-/*******************************************************************************/
+    cache_sets[set].remove(tag);
+}
+/*********************************************************************************************/
+/*									CacheRow functions   									 */
+/*********************************************************************************************/
 CacheRow::CacheRow(int block_size, int assoc) : address_list(assoc), block_size(block_size) {}
 
 bool CacheRow::search(unsigned long int tag)
@@ -354,12 +364,13 @@ bool CacheRow::search(unsigned long int tag)
     try
     {
         Block& b = findBlock(tag);
-        return true;
     }
     catch(const std::exception&)
     {
         return false;
     }
+
+    return true;
 }
 Block& CacheRow::findBlock(unsigned long int tag)
 {
@@ -371,7 +382,21 @@ Block& CacheRow::findBlock(unsigned long int tag)
 }
 Block& CacheRow::update(unsigned long new_address, bool write)
 {
+    Block curr_block = findBlock(new_address); 
+    address_list.remove(curr_block);
+
+    if (write)
+    {
+        curr_block.setDirty(true);
+    }
     
+    address_list.push_front(curr_block);
+}
+void CacheRow::remove(unsigned long int address)
+{
+    Block curr_block = findBlock(address); 
+    address_list.remove(curr_block);
+    address_list.push_front(Block());   // after remove the place should be the LRU (?)
 }
 bool CacheRow::isDirty(unsigned long int tag)
 {
