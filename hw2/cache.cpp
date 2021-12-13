@@ -33,7 +33,15 @@ public:
 
     // For Debuging
     friend std::ostream& operator<< (std::ostream& out, const Block& b) { 
-		out << "address = " << b.address << ", dirty = " << std::boolalpha << b.dirty << ", valid = " << b.valid;
+		// out << "address = " << b.address << ", dirty = " << std::boolalpha << b.dirty << ", valid = " << b.valid;
+		out << "(" << b.address;
+        if (!b.valid)
+            out << ", *";
+        if (b.dirty)
+            out << ", D";
+        
+        out << ")";
+
 		return out;
     }
 private:
@@ -436,7 +444,7 @@ void CacheRow::remove(unsigned long int address)
     try
     {
         Block curr_block = findBlock(address); 
-        address_list.remove(curr_block);
+        address_list.erase(std::find(address_list.begin(),address_list.end(),curr_block));
         address_list.push_back(Block());
     }
     catch(const std::exception& e) { }

@@ -69,6 +69,8 @@ int main(int argc, char **argv) {
 
 	while (getline(file, line)) {
 
+		cout << cache << endl;
+
 		stringstream ss(line);
 		string address;
 		char operation = 0; // read (R) or write (W)
@@ -91,7 +93,7 @@ int main(int argc, char **argv) {
 
 		// DEBUG - remove this line
 		cout << " (dec) " << num << endl;
-
+		
 		if (operation == 'r')
 			cache.read(num);
 		else if (operation == 'w')
