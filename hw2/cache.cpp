@@ -299,6 +299,7 @@ void MemCache::getRates(double &L1MissRate, double &L2MissRate, double &avgAccTi
     double L1_miss = L1.getNumberOfMiss();
     int L2_access = L2.getNumberOfAccess();
     double L2_miss = L2.getNumberOfMiss();
+
     L1MissRate = L1_miss / num_of_access;
     L2MissRate = L2_miss / L2_access;
     double tot_time = (num_of_access * l1_cyc) + (L2_access * l2_cyc) + (num_of_mem_access * mem_cyc);
@@ -314,7 +315,7 @@ LevelCache::LevelCache(unsigned int size, unsigned int assoc, unsigned int block
       num_of_access(0), num_of_miss(0)
 {
     set_mask = INT64_MAX;
-    set_mask >>= (8 * sizeof(int64_t)) - set_size;
+    set_mask = (set_size == 0) ? 0 : set_mask<<((8 * sizeof(int64_t)) - set_size);
 }
 
 bool LevelCache::search(unsigned long int address) //if miss you need to update the number of miss + access
@@ -432,9 +433,13 @@ Block CacheRow::insert(unsigned long tag, bool write)
 }
 void CacheRow::remove(unsigned long int address)
 {
-    Block curr_block = findBlock(address); 
-    address_list.remove(curr_block);
-    address_list.push_back(Block());
+    try
+    {
+        Block curr_block = findBlock(address); 
+        address_list.remove(curr_block);
+        address_list.push_back(Block());
+    }
+    catch(const std::exception& e) { }
 }
 bool CacheRow::isDirty(unsigned long int tag)
 {
