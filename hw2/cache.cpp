@@ -197,7 +197,7 @@ void MemCache::L2Insert(unsigned long int block_address, bool dirty)
     bool old_dirty = false;
     // think should use the Block insert() function - where can see if <old_block> was invalid/dirty/fine
     unsigned long int old_address = L2.insert(block_address, old_dirty, dirty); 
-    L1.remove(old_address);
+    L1.remove(old_address); // BUG: tag in L2 can be diffrent than same address tag in L1, so this dont remove from L1, we need to have indicator wheter they are the same address(ptr,full address, ...)
 }
 
 /**
@@ -216,7 +216,7 @@ void MemCache::writeAllocate(unsigned long int block_address)
             L2.update(block_address);
         else
         {
-            L2Insert(block_address);
+            L2Insert(block_address);     // BUG: need to check if remove block that appear in L1(see comment inside func)
             num_of_mem_access++;
         }
     }
