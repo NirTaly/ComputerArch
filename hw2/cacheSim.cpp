@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 
 	while (getline(file, line)) {
 
-		cout << cache << endl;
+		// cout << cache << endl;
 
 		stringstream ss(line);
 		string address;
@@ -81,18 +81,18 @@ int main(int argc, char **argv) {
 		}
 
 		// DEBUG - remove this line
-		cout << "operation: " << operation; 
+		// cout << "operation: " << operation; 
 
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 
 		// DEBUG - remove this line
-		cout << ", address (hex)" << cutAddress;
+		// cout << ", address (hex)" << cutAddress;
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 
 		// DEBUG - remove this line
-		cout << " (dec) " << num << endl;
+		// cout << " (dec) " << num << endl;
 		
 		if (operation == 'r')
 			cache.read(num);
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
 			cache.write(num);
 	}
 
-	cout << cache << endl;
+	// cout << cache << endl;
 
 	double L1MissRate;
 	double L2MissRate;
