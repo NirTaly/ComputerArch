@@ -3,11 +3,14 @@
 #include <list>
 #include <vector>
 
+#ifndef CACHE_CPP
+#define CACHE_CPP
+
 using std::list;
 
 const bool WRITE = true;
 const bool READ = false;
-
+/**
 static uint32_t log2(uint32_t n)
 {
     int count = 0;
@@ -15,7 +18,7 @@ static uint32_t log2(uint32_t n)
     {
     }
     return count - 1;
-}
+}**/
 
 class Block
 {
@@ -53,7 +56,7 @@ private:
 class CacheRow
 {
 public:
-    CacheRow(int block_size, int assoc);
+    CacheRow(int assoc);
 
     bool search(unsigned long int tag);
     Block& findBlock(unsigned long int tag);
@@ -70,6 +73,7 @@ public:
         }
 		return out;
     }
+
 private:
     list<Block> address_list;
     int block_size;
@@ -78,7 +82,7 @@ private:
 class LevelCache
 {
 public:
-    LevelCache(unsigned int size, unsigned int assoc, unsigned int block_size);
+    LevelCache(unsigned int size, unsigned int assoc);
     bool search(unsigned long int address);
     bool isDirty(unsigned long int address);
     /**
@@ -100,7 +104,7 @@ public:
      * @param dirty  true if we write, false if we read.
      * @return old address (LRU address),
      */
-    unsigned long int insert(unsigned long int address, bool &old_dirty, bool dirty = false);
+    unsigned long int insert(unsigned long int address, bool &old_dirty, bool dirty);
 
     /**
      * @brief address is already in cache, so need to update place in Most Recently Used (become front of the list)
@@ -144,24 +148,26 @@ private:
     unsigned int num_of_mem_access;
     unsigned int block_s;
 
-    void L1Insert(unsigned long int block_address, bool dirty = false);
-    void L2Insert(unsigned long int block_address, bool dirty = false);
+    void L1Insert(unsigned long int block_address, bool dirty);
+    void L2Insert(unsigned long int block_address, bool dirty);
     void writeAllocate(unsigned long int block_address);
     void writeNoAllocate(unsigned long int block_address);
 
- friend std::ostream& operator<<(std::ostream& os, const MemCache& cache){
-        os << "L1" << std::endl;
-        os << cache.L1 << std::endl;
-        os << "L2" << std::endl;
-        os << cache.L2 << std::endl;
-        return os;
-    }
+    
 public:
     MemCache(unsigned int MemCyc, unsigned int BSize, unsigned int L1Size, unsigned int L2Size, unsigned int L1Assoc, unsigned int L2Assoc, unsigned int L1Cyc, unsigned int L2Cyc, unsigned int WrAlloc);
     ~MemCache() = default;
     void read(unsigned long int address);
     void write(unsigned long int address);
     void getRates(double &L1MissRate, double &L2MissRate, double &avgAccTime);
+
+    friend std::ostream& operator<<(std::ostream& os, const MemCache& cache){
+            os << "L1" << std::endl;
+            os << cache.L1 << std::endl;
+            os << "L2" << std::endl;
+            os << cache.L2 << std::endl;
+            return os;
+    }
 };
 
 /*********************************************************************************************/
@@ -174,7 +180,7 @@ public:
  * @param block_address the new block to insert
  * @param dirty true if we write to the block
  */
-void MemCache::L1Insert(unsigned long int block_address, bool dirty)
+void MemCache::L1Insert(unsigned long int block_address, bool dirty = false)
 {
     bool old_dirty = false;    
 
@@ -192,12 +198,12 @@ void MemCache::L1Insert(unsigned long int block_address, bool dirty)
  * @param block_address the new block to insert
  * @param dirty true if we write to the block
  */
-void MemCache::L2Insert(unsigned long int block_address, bool dirty)
+void MemCache::L2Insert(unsigned long int block_address, bool dirty = false)
 {
     bool old_dirty = false;
     // think should use the Block insert() function - where can see if <old_block> was invalid/dirty/fine
     unsigned long int old_address = L2.insert(block_address, old_dirty, dirty); 
-    L1.remove(old_address); // BUG: tag in L2 can be diffrent than same address tag in L1, so this dont remove from L1, we need to have indicator wheter they are the same address(ptr,full address, ...)
+    L1.remove(old_address);
 }
 
 /**
@@ -251,7 +257,7 @@ void MemCache::writeNoAllocate(unsigned long int block_address)
  * @param WrAlloc true if write-allocate, false if write through
  */
 MemCache::MemCache(unsigned int MemCyc, unsigned int BSize, unsigned int L1Size, unsigned int L2Size, unsigned int L1Assoc, unsigned int L2Assoc, unsigned int L1Cyc, unsigned int L2Cyc, unsigned int WrAlloc)
-    : allocate(WrAlloc), mem_cyc(MemCyc), l1_cyc(L1Cyc), l2_cyc(L2Cyc), L1(L1Size, L1Assoc, BSize), L2(L2Size, L2Assoc, BSize), num_of_access(0), num_of_mem_access(0), block_s(BSize) {}
+    : allocate(WrAlloc), mem_cyc(MemCyc), l1_cyc(L1Cyc), l2_cyc(L2Cyc), L1(L1Size, L1Assoc), L2(L2Size, L2Assoc), num_of_access(0), num_of_mem_access(0), block_s(BSize) {}
 
 /**
  * @brief simulate read request
@@ -270,7 +276,7 @@ void MemCache::read(unsigned long int address)
     else if (L2.search(block_address))    //should refer to dirty bit?
     {
         L2.update(block_address);
-        L1Insert(block_address);
+        L1Insert(block_address); //mabe update if it was dirty
     }
     else
     {
@@ -318,12 +324,13 @@ void MemCache::getRates(double &L1MissRate, double &L2MissRate, double &avgAccTi
 /*									LevelCache functions   									 */
 /*********************************************************************************************/
 
-LevelCache::LevelCache(unsigned int size, unsigned int assoc, unsigned int block_size)
-    : cache_sets(1<<(size-block_size-assoc), CacheRow(block_size, assoc)), set_size(log2(cache_sets.size())),
+LevelCache::LevelCache(unsigned int size, unsigned int assoc)
+    : cache_sets((1<<(size-assoc)), CacheRow(assoc)), set_size(size- assoc),
       num_of_access(0), num_of_miss(0)
 {
     set_mask = INT64_MAX;
-    set_mask = (set_size == 0) ? 0 : set_mask<<((8 * sizeof(int64_t)) - set_size);
+    set_mask = (set_size == 0) ? 0 : set_mask>>(((8 * sizeof(int64_t)) - set_size) -1);
+    std::cout << set_size << "  " << set_mask << std::endl;
 }
 
 bool LevelCache::search(unsigned long int address) //if miss you need to update the number of miss + access
@@ -355,7 +362,7 @@ Block LevelCache::insert(unsigned long int address,bool dirty)
     return cache_sets[set].insert(tag, dirty);
 }
 
-unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty, bool dirty)
+unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty, bool dirty = false)
 {
     uint64_t set = address & set_mask;
     uint64_t tag = address >> set_size;
@@ -363,7 +370,7 @@ unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty, 
     Block rem_block = cache_sets[set].insert(tag,dirty);
 
     old_dirty = rem_block.isDirty();
-    return rem_block.getAddress();
+    return ((rem_block.getAddress() << set_size) + set);
 }
 
 void LevelCache::update(unsigned long int address, bool dirty)
@@ -383,7 +390,7 @@ void LevelCache::remove(unsigned long int address)
 /*********************************************************************************************/
 /*									CacheRow functions   									 */
 /*********************************************************************************************/
-CacheRow::CacheRow(int block_size, int assoc) : address_list(1<<assoc), block_size(block_size) {}
+CacheRow::CacheRow(int assoc) : address_list(1<<assoc) {}
 
 bool CacheRow::search(unsigned long int tag)
 {
@@ -461,3 +468,5 @@ bool CacheRow::isDirty(unsigned long int tag)
         return false;
     }
 }
+
+#endif

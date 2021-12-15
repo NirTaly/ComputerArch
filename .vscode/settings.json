@@ -1,5 +1,6 @@
 {
 	"files.associations": {
+		"*.h": "cpp",
 		"make": "makefile",
 		"cctype": "cpp",
 		"clocale": "cpp",
@@ -44,6 +45,7 @@
 		"sstream": "cpp",
 		"stdexcept": "cpp",
 		"streambuf": "cpp",
-		"typeinfo": "cpp"
+		"typeinfo": "cpp",
+		"list": "cpp"
 	}
 }

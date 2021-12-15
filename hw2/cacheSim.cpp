@@ -15,9 +15,9 @@ using std::cerr;
 using std::ifstream;
 using std::stringstream;
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv) {   
 
-	if (argc < 19) {
+	if (argc < 1) {
 		cerr << "Not enough arguments" << endl;
 		return 0;
 	}
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 		}
 
 		// DEBUG - remove this line
-		cout << "operation: " << operation;
+		cout << "operation: " << operation; 
 
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 
@@ -100,6 +100,8 @@ int main(int argc, char **argv) {
 			cache.write(num);
 	}
 
+	cout << cache << endl;
+	
 	double L1MissRate;
 	double L2MissRate;
 	double avgAccTime;
