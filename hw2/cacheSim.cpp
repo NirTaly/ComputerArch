@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	MemCache cache(MemCyc, BSize, L1Size, L2Size, L1Assoc, L2Assoc, L1Cyc, L2Cyc, WrAlloc);
+	MemCache cache(MemCyc, BSize, L1Size, L2Size, L1Assoc, L2Assoc, L1Cyc, L2Cyc, WrAlloc);    
 
 
 	while (getline(file, line)) {
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 	}
 
 	cout << cache << endl;
-	
+
 	double L1MissRate;
 	double L2MissRate;
 	double avgAccTime;

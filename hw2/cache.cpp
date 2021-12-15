@@ -257,7 +257,7 @@ void MemCache::writeNoAllocate(unsigned long int block_address)
  * @param WrAlloc true if write-allocate, false if write through
  */
 MemCache::MemCache(unsigned int MemCyc, unsigned int BSize, unsigned int L1Size, unsigned int L2Size, unsigned int L1Assoc, unsigned int L2Assoc, unsigned int L1Cyc, unsigned int L2Cyc, unsigned int WrAlloc)
-    : allocate(WrAlloc), mem_cyc(MemCyc), l1_cyc(L1Cyc), l2_cyc(L2Cyc), L1(L1Size, L1Assoc), L2(L2Size, L2Assoc), num_of_access(0), num_of_mem_access(0), block_s(BSize) {}
+    : allocate(WrAlloc), mem_cyc(MemCyc), l1_cyc(L1Cyc), l2_cyc(L2Cyc), L1(L1Size - BSize, L1Assoc), L2(L2Size - BSize, L2Assoc), num_of_access(0), num_of_mem_access(0), block_s(BSize) {}
 
 /**
  * @brief simulate read request
@@ -330,7 +330,6 @@ LevelCache::LevelCache(unsigned int size, unsigned int assoc)
 {
     set_mask = INT64_MAX;
     set_mask = (set_size == 0) ? 0 : set_mask>>(((8 * sizeof(int64_t)) - set_size) -1);
-    std::cout << set_size << "  " << set_mask << std::endl;
 }
 
 bool LevelCache::search(unsigned long int address) //if miss you need to update the number of miss + access
