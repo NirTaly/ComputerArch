@@ -64,43 +64,43 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	MemCache cache(MemCyc, BSize, L1Size, L2Size, L1Assoc, L2Assoc, L1Cyc, L2Cyc, WrAlloc);    
+	MemCache cache(MemCyc, BSize, L1Size, L2Size, L1Assoc, L2Assoc, L1Cyc, L2Cyc, WrAlloc);     
 
 
 	while (getline(file, line)) {
 
-		// cout << cache << endl;
+		//cout << cache << endl;
 
 		stringstream ss(line);
 		string address;
 		char operation = 0; // read (R) or write (W)
 		if (!(ss >> operation >> address)) {
 			// Operation appears in an Invalid format
-			cout << "Command Format error" << endl;
+			cout << "Command Format error" << endl; 
 			return 0;
 		}
 
-		// DEBUG - remove this line
-		// cout << "operation: " << operation; 
+		 //DEBUG - remove this line
+		//cout << "operation: " << operation; 
 
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 
 		// DEBUG - remove this line
-		// cout << ", address (hex)" << cutAddress;
+		 //cout << ", address (hex)" << cutAddress;
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 
 		// DEBUG - remove this line
-		// cout << " (dec) " << num << endl;
+		//cout << " (dec) " << num << endl;
 		
 		if (operation == 'r')
 			cache.read(num);
 		else if (operation == 'w')
-			cache.write(num);
+			cache.write(num); 
 	}
 
-	// cout << cache << endl;
+	//cout << cache << endl;
 
 	double L1MissRate;
 	double L2MissRate;
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);
-	printf("AccTimeAvg=%.03f\n", avgAccTime);
+	printf("AccTimeAvg=%.03f\n", avgAccTime);     
 
 	return 0;
 }

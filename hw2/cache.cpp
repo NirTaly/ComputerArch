@@ -112,7 +112,7 @@ public:
      * @param address 
      * @param dirty true if we write, false if we read.
      */
-    void update(unsigned long int address, bool dirty = false);
+    bool update(unsigned long int address, bool dirty = false);
     void remove(unsigned long int address);
     int getNumberOfAccess() { return num_of_access; }
     int getNumberOfMiss() { return num_of_miss; }
@@ -187,7 +187,7 @@ void MemCache::L1Insert(unsigned long int block_address, bool dirty)
     // think should use the Block insert() function - where can see if <old_block> was invalid/dirty/fine
     unsigned long int old_address = L1.insert(block_address, old_dirty, dirty);
     if (old_dirty)
-        L2.update(old_address);
+        L2.update(old_address,old_dirty);
 }
 
 /**
@@ -203,9 +203,15 @@ void MemCache::L2Insert(unsigned long int block_address, bool dirty)
     // bool old_dirty = false;
     
     // unsigned long int old_address = L2.insert(block_address, old_dirty, dirty); 
+    
     Block old_address = L2.insert(block_address,dirty); 
     if (old_address.isValid())
+    {
+        if (L1.isDirty(old_address.getAddress()))
+            L2.insert(old_address.getAddress(),true);
         L1.remove(old_address.getAddress()); 
+    }
+    L2.insert(block_address,dirty); 
 }
 
 /**
@@ -219,6 +225,7 @@ void MemCache::writeAllocate(unsigned long int block_address)
         L1.update(block_address, true);
     else
     {
+        L1Insert(block_address, true);
         if (L2.search(block_address))
             L2.update(block_address);
         else
@@ -226,7 +233,8 @@ void MemCache::writeAllocate(unsigned long int block_address)
             L2Insert(block_address,false);
             num_of_mem_access++;
         }
-        L1Insert(block_address, true);
+        L1.insert(block_address, true);
+
     }
 }
 
@@ -273,12 +281,12 @@ void MemCache::read(unsigned long int address)
     // bool dirty = false;
     if (L1.search(block_address))   //should refer to dirty bit?
     {
-        L1.update(block_address);   
+        L1.update(block_address, L1.isDirty(block_address));   
     }
     else if (L2.search(block_address))    //should refer to dirty bit?
     {
-        L2.update(block_address);
-        L1Insert(block_address,false); //mabe update if it was dirty
+        bool old_dirty = L2.update(block_address);
+        L1Insert(block_address,old_dirty); //mabe update if it was dirty
     }
     else
     {
@@ -316,6 +324,14 @@ void MemCache::getRates(double &L1MissRate, double &L2MissRate, double &avgAccTi
     int L2_access = L2.getNumberOfAccess();
     double L2_miss = L2.getNumberOfMiss();
 
+    /**
+    std::cout << "L1 access " << num_of_access;
+    std::cout << ", L1 miss " << L1_miss;
+    std::cout << ", L2 access " << L2_access;
+    std::cout << ", L2 miss " << L2_miss;
+    std::cout << ", mem access " << num_of_mem_access << std::endl;
+    **/
+   
     L1MissRate = L1_miss / num_of_access;
     L2MissRate = L2_miss / L2_access;
     double tot_time = (num_of_access * l1_cyc) + (L2_access * l2_cyc) + (num_of_mem_access * mem_cyc);
@@ -374,18 +390,21 @@ unsigned long int LevelCache::insert(unsigned long int address,bool &old_dirty, 
     return ((rem_block.getAddress() << set_size) + set);
 }
 
-void LevelCache::update(unsigned long int address, bool dirty)
+bool LevelCache::update(unsigned long int address, bool dirty)
 {
     uint64_t set = address & set_mask;
     uint64_t tag = address >> set_size;
 
-    cache_sets[set].update(tag,dirty);
+    Block rem_block = cache_sets[set].update(tag,dirty);
+
+    return rem_block.isDirty();
 }
 void LevelCache::remove(unsigned long int address)
 {
     uint64_t set = address & set_mask;
     uint64_t tag = address >> set_size;
 
+    
     cache_sets[set].remove(tag);
 }
 /*********************************************************************************************/
