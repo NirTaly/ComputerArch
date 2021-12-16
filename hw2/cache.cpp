@@ -285,7 +285,7 @@ void MemCache::read(unsigned long int address)
     }
     else if (L2.search(block_address))    //should refer to dirty bit?
     {
-        bool old_dirty = L2.update(block_address);
+        bool old_dirty = L2.update(block_address, L2.isDirty(block_address));
         L1Insert(block_address,old_dirty); //mabe update if it was dirty
     }
     else
@@ -331,7 +331,7 @@ void MemCache::getRates(double &L1MissRate, double &L2MissRate, double &avgAccTi
     std::cout << ", L2 miss " << L2_miss;
     std::cout << ", mem access " << num_of_mem_access << std::endl;
     **/
-   
+
     L1MissRate = L1_miss / num_of_access;
     L2MissRate = L2_miss / L2_access;
     double tot_time = (num_of_access * l1_cyc) + (L2_access * l2_cyc) + (num_of_mem_access * mem_cyc);
