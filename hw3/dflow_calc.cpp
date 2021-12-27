@@ -21,7 +21,9 @@ private:
 public:
     InstDep(): depth(0), dep1(0), dep2(0) {}
     InstDep(int depth,int dep1,int dep2): depth(depth), dep1(dep1), dep2(dep2) {}
+    InstDep(const InstDep& inst_dep): depth(inst_dep.depth), dep1(inst_dep.dep1), dep2(inst_dep.dep2){}
     InstDep& operator=(const InstDep& instdep) = default;
+
     ~InstDep() = default;
     int setDepth(int depth) {this->depth = depth;}
     int setDep1(int dep1)  {this->dep1 = dep1;}
