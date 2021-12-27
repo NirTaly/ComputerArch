@@ -98,8 +98,8 @@ int Graph::getInstDepth(unsigned int theInst)
 }
 int Graph::getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst)
 {
-    src1DepInst = depTree[theInst].getDep1();
-    src2DepInst = depTree[theInst].getDep2();
+    *src1DepInst = depTree[theInst].getDep1();
+    *src2DepInst = depTree[theInst].getDep2();
     return depTree[theInst].getDepth();
 }
 
