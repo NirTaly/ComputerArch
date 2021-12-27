@@ -10,6 +10,10 @@ CFLAGS = -std=c99 -Wall
 CXX = g++
 CXXFLAGS = -std=c++11 -Wall
 
+# for our use
+SUBMITTERS := 315697169_ASSAF_TEUDAT_ZEHUT
+DEBUG=1
+
 ifeq ($(DEBUG),1)
   CFLAGS += -g -O0
   CXXFLAGS += -g -O0
@@ -48,6 +52,10 @@ endif
 
 $(OBJ_GIVEN): %.o: %.c dflow_calc.h
 	$(CC) -c $(CFLAGS) -o $@ $<
+
+
+zip: $(SRC_DFLOW)
+	tar -czvf $(SUBMITTERS).tar.gz $^
 
 
 .PHONY: clean

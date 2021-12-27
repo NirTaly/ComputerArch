@@ -81,7 +81,8 @@ Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsign
         //calc the max depth
         if (depth  > max_depth)
         {
-            depth = max_depth;
+            // depth = max_depth;
+            max_depth = depth;
             last_inst = i;
         }
     }

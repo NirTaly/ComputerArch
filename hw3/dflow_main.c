@@ -187,6 +187,7 @@ int main(int argc, const char *argv[]) {
             exit(3);
         }
     }
+
     freeProgCtx(ctx);
     free(theProg); // We keep theProg up to here to allow your analyzer to use it - if it wants
     return 0;
