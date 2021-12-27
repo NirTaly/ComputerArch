@@ -55,9 +55,9 @@ $(OBJ_GIVEN): %.o: %.c dflow_calc.h
 
 
 zip: $(SRC_DFLOW)
-	tar -czvf $(SUBMITTERS).tar.gz $^
+	tar -czvf hw3_$(SUBMITTERS).tar.gz $^
 
 
 .PHONY: clean
 clean:
-	rm -f dflow_calc $(OBJ)
+	rm -f dflow_calc $(OBJ) *.tar.gz
