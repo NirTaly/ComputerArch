@@ -44,7 +44,7 @@ private:
     const int ENTRY = -1;
 
     bool isInstLegal(unsigned int instruction) { return instruction >= 0 && instruction < numOfInsts;}
-
+    int getDepth(unsigned int theInst, bool checkLegal = true);
 public:
     Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts);
     ~Graph() = default;
@@ -91,16 +91,21 @@ Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsign
 
 }
 
-
-int Graph::getInstDepth(unsigned int theInst)
+// check legal to help use this func with getProgDepth
+int Graph::getDepth(unsigned int theInst, bool checkLegal)
 {
-    if (!isInstLegal(theInst))
+    if ( checkLegal && !isInstLegal(theInst))
         return -1;
     if ( depTree[depTree[theInst].getDep1()].getDepth() > depTree[depTree[theInst].getDep2()].getDepth())
         return depTree[depTree[theInst].getDep1()].getDepth();
-    if ( depTree[depTree[theInst].getDep2()].getDepth()  == numOfInsts)
+    // if ( depTree[depTree[theInst].getDep2()].getDepth()  == numOfInsts)     // if this is its actually depth?
+    if ( depTree[theInst].getDep2() == numOfInsts)
         return 0;
     return depTree[depTree[theInst].getDep2()].getDepth();
+}
+int Graph::getInstDepth(unsigned int theInst)
+{
+    return getDepth(theInst);
 }
 int Graph::getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst)
 {
@@ -114,11 +119,7 @@ int Graph::getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst)
 int Graph::getProgDepth()
 {
     unsigned int theInst = numOfInsts +1;
-    if ( depTree[depTree[theInst].getDep1()].getDepth() > depTree[depTree[theInst].getDep2()].getDepth())
-        return depTree[depTree[theInst].getDep1()].getDepth();
-    if ( depTree[depTree[theInst].getDep2()].getDepth()  == numOfInsts)
-        return -1;
-    return depTree[depTree[theInst].getDep2()].getDepth();
+    return getDepth(theInst,false);
 }
 
 
