@@ -37,26 +37,22 @@ class Graph
 {
 private:
     vector<InstDep> depTree;
-    unsigned int opsLatency[MAX_OPS];
     unsigned int numOfInsts;
 
     const int ENTRY = -1;
 
     bool isInstLegal(int instruction) { return instruction >= 0 && instruction < numOfInsts;}
+
 public:
     Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts);
-    ~Graph();
+    ~Graph() = default;
     int getInstDepth(unsigned int theInst);
     int getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst);
     int getProgDepth();
 };
-Graph:: Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts): depTree(numOfInsts + 2), opsLatency(), numOfInsts(numOfInsts), 
+Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts): depTree(numOfInsts + 2), numOfInsts(numOfInsts)
 {
-    //coping opLatency
-    for(int i =0; i< MAX_OPS; i++)
-    {
-        this->opsLatency[i] = opsLatency[i];
-    }
+
 
     // adding the entery
     depTree[numOfInsts] = InstDep(0,-1,-1);
@@ -64,41 +60,49 @@ Graph:: Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsig
     //
     vector<int> regLastCng(MAXREGISTERS,numOfInsts);
     int depth, dep1, dep2;
-    for (int i = 0; i< numOfInsts; i++)
+    int max_depth = 0;
+    int last_inst = numOfInsts;
+    int i;
+    for (i = 0; i< numOfInsts; i++)
     {
+        //inst i dependecies
         dep1 = regLastCng[progTrace[i].src1Idx];
         dep2 = regLastCng[progTrace[i].src2Idx];
+
+        //inst i depth
         depth = (depTree[dep1].getDepth() > depTree[dep2].getDepth()) ? depTree[dep1].getDepth() : depTree[dep2].getDepth();
         depth += opsLatency[progTrace[i].opcode];
+
+        //update vectors
         depTree[numOfInsts] = InstDep(depth, dep1, dep2);
         regLastCng[progTrace[i].dstIdx] = i;
+        //calc the max depth
+        if (depth  > max_depth)
+        {
+            depth = max_depth;
+            last_inst = i;
+        }
     }
+
+    //adding exit
+    depTree[numOfInsts + 1] = InstDep(max_depth, i, i);
+
 }
-Graph:: ~Graph()
-{
-}
+
 
 int Graph::getInstDepth(unsigned int theInst)
 {
-    if (!isInstLegal(theInst)) return -1;
-
-    if (ENTRY == depTree[theInst].getOp()) 
-        return opsLatency[depTree[theInst].getOp()];
-    
-    int dep1 = depTree[theInst].getDep1();
-    int dep2 = depTree[theInst].getDep2();
-
-    // need to check if dep# isnt valid?
-
-    int depth1 = getInstDepth(dep1);
-    int depth2 = getInstDepth(dep2);
-
-    return std::max(depth1,depth2) + opsLatency[depTree[theInst].getOp()];
+    if ( depTree[depTree[theInst].getDep1()].getDepth() > depTree[depTree[theInst].getDep2()].getDepth())
+        return depTree[depTree[theInst].getDep1()].getDepth();
+    return depTree[depTree[theInst].getDep2()].getDepth();
 }
 int Graph::getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst)
 {
-    
+    src1DepInst = depTree[theInst].getDep1();
+    src2DepInst = depTree[theInst].getDep2();
+    return depTree[theInst].getDepth();
 }
+
 int Graph::getProgDepth()
 {
     return getInstDepth(numOfInsts + 1);
