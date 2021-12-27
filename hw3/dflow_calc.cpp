@@ -15,22 +15,22 @@ const int MAXREGISTERS = 32;
 class InstDep
 {
 private:
-    int depth;
-    int dep1;
-    int dep2;
+    unsigned int depth;
+    unsigned int dep1;
+    unsigned int dep2;
 public:
     InstDep(): depth(0), dep1(0), dep2(0) {}
-    InstDep(int depth,int dep1,int dep2): depth(depth), dep1(dep1), dep2(dep2) {}
+    InstDep(unsigned int depth,unsigned int dep1,unsigned int dep2): depth(depth), dep1(dep1), dep2(dep2) {}
     InstDep(const InstDep& inst_dep): depth(inst_dep.depth), dep1(inst_dep.dep1), dep2(inst_dep.dep2){}
     InstDep& operator=(const InstDep& instdep) = default;
 
     ~InstDep() = default;
-    int setDepth(int depth) {this->depth = depth;}
-    int setDep1(int dep1)  {this->dep1 = dep1;}
-    int setDep2(int dep2) {this->dep2 = dep2;}
-    int getDepth() {return depth;}
-    int getDep1()  {return dep1;}
-    int getDep2() {return dep2;}
+    void setDepth(unsigned int depth) {this->depth = depth;}
+    void setDep1(unsigned int dep1)  {this->dep1 = dep1;}
+    void setDep2(unsigned int dep2) {this->dep2 = dep2;}
+    unsigned int getDepth() {return depth;}
+    unsigned int getDep1()  {return dep1;}
+    unsigned int getDep2() {return dep2;}
 };
 
 
@@ -43,7 +43,7 @@ private:
 
     const int ENTRY = -1;
 
-    bool isInstLegal(int instruction) { return instruction >= 0 && instruction < numOfInsts;}
+    bool isInstLegal(unsigned int instruction) { return instruction >= 0 && instruction < numOfInsts;}
 
 public:
     Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsigned int numOfInsts);
@@ -57,15 +57,15 @@ Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsign
 
 
     // adding the entery
-    depTree[numOfInsts] = InstDep(0,-1,-1);
+    depTree[numOfInsts] = InstDep(0,numOfInsts,numOfInsts);
 
     //
-    vector<int> regLastCng(MAXREGISTERS,numOfInsts);
-    int depth, dep1, dep2;
-    int max_depth = 0;
-    int last_inst = numOfInsts;
-    int i;
-    for (i = 0; i< numOfInsts; i++)
+    vector<unsigned int> regLastCng(MAXREGISTERS,numOfInsts);
+    unsigned int depth, dep1, dep2;
+    unsigned int max_depth = 0;
+    unsigned int last_inst = numOfInsts;
+    unsigned int i;
+    for (i = 0; i < numOfInsts; i++)
     {
         //inst i dependecies
         dep1 = regLastCng[progTrace[i].src1Idx];
@@ -76,7 +76,7 @@ Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsign
         depth += opsLatency[progTrace[i].opcode];
 
         //update vectors
-        depTree[numOfInsts] = InstDep(depth, dep1, dep2);
+        depTree[i] = InstDep(depth, dep1, dep2);
         regLastCng[progTrace[i].dstIdx] = i;
         //calc the max depth
         if (depth  > max_depth)
@@ -87,21 +87,27 @@ Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsign
     }
 
     //adding exit
-    depTree[numOfInsts + 1] = InstDep(max_depth, i, i);
+    depTree[numOfInsts + 1] = InstDep(max_depth, last_inst, last_inst);
 
 }
 
 
 int Graph::getInstDepth(unsigned int theInst)
 {
+    if (!isInstLegal(theInst))
+        return -1;
     if ( depTree[depTree[theInst].getDep1()].getDepth() > depTree[depTree[theInst].getDep2()].getDepth())
         return depTree[depTree[theInst].getDep1()].getDepth();
+    if ( depTree[depTree[theInst].getDep2()].getDepth()  == numOfInsts)
+        return -1;
     return depTree[depTree[theInst].getDep2()].getDepth();
 }
 int Graph::getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst)
 {
-    *src1DepInst = depTree[theInst].getDep1();
-    *src2DepInst = depTree[theInst].getDep2();
+    if (!isInstLegal(theInst))
+        return -1;
+    *src1DepInst = (depTree[theInst].getDep1() != numOfInsts) ? depTree[theInst].getDep1() : -1;
+    *src2DepInst = (depTree[theInst].getDep2() != numOfInsts) ? depTree[theInst].getDep2() : -1;
     return depTree[theInst].getDepth();
 }
 
