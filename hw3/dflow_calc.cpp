@@ -74,7 +74,7 @@ Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsign
         //inst i depth
         depth = (depTree[dep1].getDepth() > depTree[dep2].getDepth()) ? depTree[dep1].getDepth() : depTree[dep2].getDepth();
         depth += opsLatency[progTrace[i].opcode];
-
+        
         //update vectors
         depTree[i] = InstDep(depth, dep1, dep2);
         regLastCng[progTrace[i].dstIdx] = i;
@@ -99,7 +99,7 @@ int Graph::getInstDepth(unsigned int theInst)
     if ( depTree[depTree[theInst].getDep1()].getDepth() > depTree[depTree[theInst].getDep2()].getDepth())
         return depTree[depTree[theInst].getDep1()].getDepth();
     if ( depTree[depTree[theInst].getDep2()].getDepth()  == numOfInsts)
-        return -1;
+        return 0;
     return depTree[depTree[theInst].getDep2()].getDepth();
 }
 int Graph::getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst)
@@ -108,12 +108,17 @@ int Graph::getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst)
         return -1;
     *src1DepInst = (depTree[theInst].getDep1() != numOfInsts) ? depTree[theInst].getDep1() : -1;
     *src2DepInst = (depTree[theInst].getDep2() != numOfInsts) ? depTree[theInst].getDep2() : -1;
-    return depTree[theInst].getDepth();
+    return 0;
 }
 
 int Graph::getProgDepth()
 {
-    return getInstDepth(numOfInsts + 1);
+    unsigned int theInst = numOfInsts +1;
+    if ( depTree[depTree[theInst].getDep1()].getDepth() > depTree[depTree[theInst].getDep2()].getDepth())
+        return depTree[depTree[theInst].getDep1()].getDepth();
+    if ( depTree[depTree[theInst].getDep2()].getDepth()  == numOfInsts)
+        return -1;
+    return depTree[depTree[theInst].getDep2()].getDepth();
 }
 
 
