@@ -56,7 +56,7 @@ Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsign
 {
 
 
-    // adding the entery
+    // adding ENTRY
     depTree[numOfInsts] = InstDep(0,numOfInsts,numOfInsts);
 
     //
@@ -81,27 +81,28 @@ Graph::Graph(const unsigned int opsLatency[], const InstInfo progTrace[], unsign
         //calc the max depth
         if (depth  > max_depth)
         {
-            // depth = max_depth;
             max_depth = depth;
             last_inst = i;
         }
     }
 
-    //adding exit
+    //adding EXIT
     depTree[numOfInsts + 1] = InstDep(max_depth, last_inst, last_inst);
 
 }
 
-// check legal to help use this func with getProgDepth
+// <checkLegal> is aux param for getProgDepth func
 int Graph::getDepth(unsigned int theInst, bool checkLegal)
 {
     if ( checkLegal && !isInstLegal(theInst))
         return -1;
+    // if dep1 has the max path
     if ( depTree[depTree[theInst].getDep1()].getDepth() > depTree[depTree[theInst].getDep2()].getDepth())
         return depTree[depTree[theInst].getDep1()].getDepth();
-    // if ( depTree[depTree[theInst].getDep2()].getDepth()  == numOfInsts)     // if this is its actually depth?
+    // if dep2 is ENTRY
     if ( depTree[theInst].getDep2() == numOfInsts)
         return 0;
+
     return depTree[depTree[theInst].getDep2()].getDepth();
 }
 int Graph::getInstDepth(unsigned int theInst)
@@ -112,8 +113,10 @@ int Graph::getInstDeps(unsigned int theInst, int *src1DepInst, int *src2DepInst)
 {
     if (!isInstLegal(theInst))
         return -1;
+
     *src1DepInst = (depTree[theInst].getDep1() != numOfInsts) ? depTree[theInst].getDep1() : -1;
     *src2DepInst = (depTree[theInst].getDep2() != numOfInsts) ? depTree[theInst].getDep2() : -1;
+
     return 0;
 }
 
