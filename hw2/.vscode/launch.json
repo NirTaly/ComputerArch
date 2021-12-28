@@ -8,8 +8,8 @@
 			"name": "g++ - Build and debug active file",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${fileDirname}/dflow_calc",
-			"args": ["rand_tests/rand_opcode1.dat", "rand_tests/rand_example2.in"],
+			"program": "${fileDirname}/${fileBasenameNoExtension}",
+			"args": ["examples/example3_trace", "--mem-cyc", "10", "--bsize", "2", "--wr-alloc", "1", "--l1-size", "4", "--l1-assoc", "1", "--l1-cyc", "1", "--l2-size", "4", "--l2-assoc", "2", "--l2-cyc", "5"],
 			"stopAtEntry": true,
 			"cwd": "${fileDirname}",
 			"environment": [],
@@ -19,6 +19,11 @@
 				{
 					"description": "Enable pretty-printing for gdb",
 					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"description": "Set Disassembly Flavor to Intel",
+					"text": "-gdb-set disassembly-flavor intel",
 					"ignoreFailures": true
 				}
 			],
